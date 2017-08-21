@@ -3,3 +3,6 @@ package.bluej
 *.ctxt
 # Java files
 *.class
+
+# test folders
+/test
