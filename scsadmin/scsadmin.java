@@ -10,6 +10,7 @@ import scstools.Command;
  */
 public class scsadmin
 {
+    public final static String version = "0.0";
     public final static String[] commandList = {
             "help",
             "create",

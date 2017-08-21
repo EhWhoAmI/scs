@@ -10,7 +10,7 @@ import scstools.Command;
 public class Info implements Command {
     @Override
     public int execute (String[] args) {
-        System.out.println("scsadmin version 0.0");
+        System.out.println("scsadmin version " + scsadmin.version);
         return Command.EXIT_SUCCESS;
     }
 }

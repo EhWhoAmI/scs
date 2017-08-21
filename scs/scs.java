@@ -10,6 +10,7 @@ import scstools.Command;
  */
 public class scs
 {
+    public final static String version = "0.0";
     public final static String[] commandList = {
             "help",
             "checkout",
@@ -28,7 +29,7 @@ public class scs
                         cmd = new Help();
                     break;
                     case "checkout":
-                        
+                        cmd = new checkout();
                     break;
                     case "info":
                         cmd = new Info();

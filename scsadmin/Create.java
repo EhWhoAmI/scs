@@ -16,7 +16,7 @@ public class Create implements Command {
     public int execute (String[] args) {
         if (args.length != 1) {
             System.out.println("usage: scs create <path>");
-            System.out.println("Create a scs repo and server at the path, port and the mySql server username and password is for the usernames and passwords.");
+            System.out.println("Create a scs repo at the path.");
             return Command.EXIT_SUCCESS;
         } 
         //Open the 'folder' and check.
@@ -67,6 +67,13 @@ public class Create implements Command {
         currentFileWriter.write("0");
         currentFileWriter.close();
         
+        //Create the scs version file, to show which version it works with
+        File versionFile = new File (database.getPath() + "/version");
+        versionFile.createNewFile();
+        
+        FileWriter versionFileWriter = new FileWriter(versionFile.getPath());
+        versionFileWriter.write(scsadmin.version);
+        versionFileWriter.close();
         //Create branch folder
         File branches = new File (basePath + "/branches");
         branches.mkdir();
@@ -84,10 +91,8 @@ public class Create implements Command {
         //Now create the diff files in the folders. It will be in XML.
         Element root = new Element("scs");
         
-        Attribute scsversion = new Attribute("version", "0.0");
+        Attribute scsversion = new Attribute("version", scsadmin.version);
         root.addAttribute(scsversion);
-        
-        //Then write to a XML
         
         //Create file
         File temp = new File(leaf.getPath() + "/branch.diff");
