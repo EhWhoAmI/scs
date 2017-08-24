@@ -2,6 +2,7 @@ package scsadmin;
 
 import java.util.Arrays;
 import scstools.Command;
+import scstools.UserID;
 /**
  * Write a description of class scs here.
  * 
@@ -18,6 +19,8 @@ public class scsadmin
     };
     static Command cmd;
     public static void main (String[] args) {
+        //Check user hash
+        UserID.processUser();
         if (args.length != 0) {
             String command = loadCommands(args[0]);
             if (command != null) {

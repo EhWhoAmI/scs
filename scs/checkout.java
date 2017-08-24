@@ -27,13 +27,44 @@ public class checkout implements Command
                 System.err.println("Failed to open repo: does not exist");
                 return Command.EXIT_SUCCESS;
             }
-            
             //Check if it is a repo.
             if (!isSCSRepo(repoURL)) {
                 System.err.println("The path " + repoURL.getPath() + " is not a scs repo.");
                 return Command.EXIT_SUCCESS;
             }
-            //Now, let's check it out!!!
+            //Now, let's check the path out!!!
+            
+            String repoName = repoURL.getName();
+            File repoLocalFile = new File (System.getProperty("user.dir") + "/" + repoName);
+            if (repoLocalFile.exists()) {
+                //Check if empty.
+                if (repoLocalFile.list().length > 0) {
+                    System.err.println("Error: checkout url is full.");
+                    return Command.EXIT_SUCCESS;
+                }
+                //Continue
+            }
+            else {
+                if (!repoLocalFile.mkdir()) {
+                    //Inform.
+                    System.err.println("Error: Unable to checkout url: " + repoLocalFile.getPath() + " Maybe access is denied?");
+                    return Command.EXIT_SUCCESS;
+                }
+            }
+            //Create repo
+            //Create .scs hidden file
+            File scsFile = new File(repoLocalFile.getPath() + "/.scs");
+            scsFile.mkdir();
+            
+            //Add HEAD file
+            File HEADFile = new File(scsFile.getPath() + "/HEAD");
+            HEADFile.createNewFile();
+            
+            //Write to file
+            
+        }
+        else {
+            System.out.println("The format you chose is wrong. Please get a file protocol, eg. http:// or https://, or \"file:///\" for local files");
         }
         return Command.EXIT_SUCCESS;
     }
