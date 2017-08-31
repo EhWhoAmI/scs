@@ -6,3 +6,6 @@ package.bluej
 
 # test folders
 /test
+/nbproject/private/
+/build/
+/dist/

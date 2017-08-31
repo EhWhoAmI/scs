@@ -20,14 +20,17 @@ public class Create implements Command {
             return Command.EXIT_SUCCESS;
         } 
         //Open the 'folder' and check.
-        File folder = new File (args[0]);
-        if (folder.exists()) {
-            if (folder.isFile()) {
+        /**
+         * The base folder of the repo.
+         */
+        File repoBase = new File (args[0]);
+        if (repoBase.exists()) {
+            if (repoBase.isFile()) {
                 System.out.println("Invalid path: path is file.");
                 return Command.EXIT_SUCCESS;
             }
             //Check if folder is empty
-            if (folder.list().length > 0) {
+            if (repoBase.list().length > 0) {
                 System.out.println("Invalid path: folder is not empty.");
                 return Command.EXIT_SUCCESS;
             }
@@ -35,23 +38,23 @@ public class Create implements Command {
         
         //Then, initialiaze the repo.
         // if it doesn't exist, create.
-        if (!folder.exists()) {
-            if (!folder.mkdirs()) {
+        if (!repoBase.exists()) {
+            if (!repoBase.mkdirs()) {
                 System.out.println("Unable to create directories. Please make sure you have premissions for that.");
                 return Command.EXIT_SUCCESS;
             }
         }
         
         //Initalize repo create folders
-        String basePath = folder.getPath();
+        String basePath = repoBase.getPath();
         System.out.println("Creating repo in " + basePath);
         try {
-            File database = new File (basePath + "/db/");
-            database.mkdir();
+            File databaseFile = new File (basePath + "/db/");
+            databaseFile.mkdir();
             //Generate file for repo UUID.
             UUID repoID = UUID.randomUUID();
             //Write it to a file
-            File repoIDFile = new File(database.getPath() + "/UUID");
+            File repoIDFile = new File(databaseFile.getPath() + "/UUID");
             repoIDFile.createNewFile();
             
             FileWriter repoIDFileWriter = new FileWriter(repoIDFile.getPath());
@@ -60,7 +63,7 @@ public class Create implements Command {
             repoIDFileWriter.close();
             
             //Create the revision file
-            File revisionFile = new File (database.getPath() + "/current");
+            File revisionFile = new File (databaseFile.getPath() + "/current");
             revisionFile.createNewFile();
             
             FileWriter currentFileWriter = new FileWriter(revisionFile.getPath());
@@ -68,7 +71,7 @@ public class Create implements Command {
             currentFileWriter.close();
             
             //Create the scs version file, to show which version it works with
-            File versionFile = new File (database.getPath() + "/version");
+            File versionFile = new File (databaseFile.getPath() + "/version");
             versionFile.createNewFile();
             
             FileWriter versionFileWriter = new FileWriter(versionFile.getPath());
@@ -93,8 +96,9 @@ public class Create implements Command {
             Attribute scsversion = new Attribute("version", scsadmin.version);
             root.addAttribute(scsversion);
             
-            //Create file
-            File temp = new File(leaf.getPath() + "/branch.diff");
+            //Create file.
+            //0 for commit 0
+            File temp = new File(leaf.getPath() + "/0");
             temp.createNewFile();
             
             FileWriter tempWriter = new FileWriter(temp.getPath());
@@ -105,7 +109,8 @@ public class Create implements Command {
             tempBuff.close();
             
             //Now write the same to the working branch
-            temp = new File(working.getPath() + "/branch.diff");
+            //0 for push 0
+            temp = new File(working.getPath() + "/0");
             temp.createNewFile();
             
             tempWriter = new FileWriter(temp.getPath());
@@ -117,11 +122,11 @@ public class Create implements Command {
             System.out.println("Unable to open file: " + ioe.getMessage());
             ioe.printStackTrace();
             //Delete whole dir if failed to create.
-            folder.delete();
+            repoBase.delete();
         } catch (Throwable t) {
             t.printStackTrace();
             //Need to clean up...
-            folder.delete();
+            repoBase.delete();
         }
         return Command.EXIT_SUCCESS;
     } 
