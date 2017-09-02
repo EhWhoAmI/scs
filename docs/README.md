@@ -10,3 +10,7 @@ SCS -- The source control system
   - A source control system is just right, because it would be fun to see how
   they are made
 4. Why java?
+  - Short answer: Why not.
+  - Long one: Because I am better in java and java sounds cool.
+
+===================

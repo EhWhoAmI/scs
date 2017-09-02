@@ -7,6 +7,11 @@ import java.nio.file.Path;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import nu.xom.Attribute;
+import nu.xom.Builder;
+import nu.xom.Document;
+import nu.xom.Element;
+import nu.xom.ParsingException;
 /**
  * Checks out a scs repo.
  * 
@@ -28,20 +33,20 @@ public class checkout implements Command
                 //Local file.
                 String path = args[0].substring(8, args[0].length());
                 
-                File repoURL = new File(path);
-                if (!repoURL.exists()) {
+                File checkoutrepoURL = new File(path);
+                if (!checkoutrepoURL.exists()) {
                     System.err.println("Failed to open repo: does not exist");
                     return Command.EXIT_SUCCESS;
                 }
                 //Check if it is a repo.
-                if (!isSCSRepo(repoURL)) {
-                    System.err.println("The path " + repoURL.getPath() + " is not a scs repo.");
+                if (!isSCSRepo(checkoutrepoURL)) {
+                    System.err.println("The path " + checkoutrepoURL.getPath() + " is not a scs repo.");
                     return Command.EXIT_SUCCESS;
                 }
                 //Now, let's check the path out!!!
                 File repoLocalFile;
                 if (args.length == 1) 
-                    repoLocalFile = new File (System.getProperty("user.dir") + "/" + repoURL.getName());
+                    repoLocalFile = new File (System.getProperty("user.dir") + "/" + checkoutrepoURL.getName());
                 else 
                     repoLocalFile = new File (args[1]);
                 
@@ -68,32 +73,60 @@ public class checkout implements Command
                 if (System.getProperty("os.name").toLowerCase().contains("win")) {
                     Path hiddenFile = scsFile.toPath();
                     Files.setAttribute(hiddenFile, "dos:hidden", true);
-                    System.out.println("Hiding...");
                 }
+                
                 //Add HEAD file
                 File HEADFile = new File(scsFile.getPath() + "/HEAD");
                 HEADFile.createNewFile();
                 
                 //Write to file
                 FileWriter HEADFileWriter = new FileWriter(HEADFile.getPath());
-                HEADFileWriter.write("file:///" + repoURL.getAbsolutePath());
+                HEADFileWriter.write("file:///" + checkoutrepoURL.getAbsolutePath());
                 HEADFileWriter.close();
                 
                 //Get the ID of the repo
-                File HEADuuid = new File (scsFile.getAbsolutePath() + "/UUID");
-                HEADuuid.createNewFile();
+                File HEADuuid = new File (checkoutrepoURL.getAbsolutePath() + "/db/UUID");
                 Scanner HEADuuidScanner = new Scanner(HEADuuid);
                 
-                String UUIDCODE = HEADuuidScanner.nextLine();
+                
+                String UUIDCODE = HEADuuidScanner.next();
                 //Write to uuid file
-                
-                File uuidLocal = new File (scsFile.getAbsolutePath() + "/uuid");
+
+                File uuidLocal = new File (scsFile.getAbsolutePath() + "/UUID");
                 uuidLocal.createNewFile();
-                
+
                 FileWriter uuidLocalWriter = new FileWriter(uuidLocal);
                 uuidLocalWriter.write(UUIDCODE);
                 uuidLocalWriter.close();
+                
+                
+                //Now, build the repo...
+                //Read from latest commit file.
+                
+                //Get commit file
+                File currentFile = new File(checkoutrepoURL.getPath() + "/db/current");
+                Scanner versionFileScanner = new Scanner (currentFile);
+                
+                int commitNo = versionFileScanner.nextInt();
+                
+                //Open master folder
+                File masterFile = new File(checkoutrepoURL.getPath() + "/branches/working/" + Integer.toHexString(commitNo));
+                
+                //Parse it.
+                Builder builder = new Builder();
+                Document build = builder.build(masterFile);
+                Element scsElement = build.getRootElement();
+                Attribute clonedVersion = scsElement.getAttribute("version");
+                if (clonedVersion.getValue().charAt(0) != scs.version.charAt(0)) {
+                    System.err.println("The version is incorrect!");
+                    return Command.EXIT_SUCCESS;
+                }
+                
+                //Parse...
+                System.out.println("Checked out commit " + commitNo);
             } catch (IOException ex) {
+                Logger.getLogger(checkout.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (ParsingException ex) {
                 Logger.getLogger(checkout.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
