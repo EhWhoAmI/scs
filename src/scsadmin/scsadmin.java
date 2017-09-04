@@ -11,7 +11,11 @@ import scstools.UserID;
  */
 public class scsadmin
 {
-    public final static String version = "0.0";
+    public final static String version = "0.0.0.0";
+    public final static int VERSION_MAJOR = 0;
+    public final static int VERSION_MINOR = 0;
+    public final static int VERSION_BUILD = 0;
+    public final static int VERSION_REVISION = 0;
     public final static String[] commandList = {
             "help",
             "create",

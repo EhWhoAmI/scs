@@ -14,3 +14,5 @@ SCS -- The source control system
   - Long one: Because I am better in java and java sounds cool.
 
 ===================
+
+How this works: Please check out [filesystem.md](./filesystem.md) for how the file system works.

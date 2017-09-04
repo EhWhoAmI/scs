@@ -9,9 +9,14 @@ import scstools.UserID;
  * @author Zyun 
  * @version (a version number or a date)
  */
-public class scs
-{
-    public final static String version = "0.0";
+public class scs {
+    //Version constants
+    public final static String version = "0.0.0.0";
+    public final static int VERSION_MAJOR = 0;
+    public final static int VERSION_MINOR = 0;
+    public final static int VERSION_BUILD = 0;
+    public final static int VERSION_REVISION = 0;
+    
     public final static String[] commandList = {
             "help",
             "checkout",

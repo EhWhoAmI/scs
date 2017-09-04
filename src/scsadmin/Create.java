@@ -5,6 +5,9 @@ import java.io.File;
 import java.util.UUID;
 import java.util.zip.*;
 import java.io.*;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
 import nu.xom.*;
 /**
  * Creates a repo in the argument.
@@ -48,102 +51,187 @@ public class Create implements Command {
         //Initalize repo create folders
         String basePath = repoBase.getPath();
         System.out.println("Creating repo in " + basePath);
-        try {
-            /**
-             * The 'DB' folder.
-             */
-            File databaseFile = new File (basePath + "/db/");
-            databaseFile.mkdir();
-            
-            //Creates UUID
-            {
-                //Generate file for repo UUID.
-                UUID repoID = UUID.randomUUID();
-                //Write it to a file
-
-                File repoIDFile = new File(databaseFile.getPath() + "/UUID");
-                repoIDFile.createNewFile();
-
-                FileWriter repoIDFileWriter = new FileWriter(repoIDFile.getPath());
-
-                repoIDFileWriter.write(String.valueOf(repoID) + "\n");
-                repoIDFileWriter.close();
-            }
-            
-            //Creates revision file
-            {
-                //Create the revision file
-                File revisionFile = new File (databaseFile.getPath() + "/current");
-                revisionFile.createNewFile();
-
-                FileWriter currentFileWriter = new FileWriter(revisionFile.getPath());
-                currentFileWriter.write("0");
-                currentFileWriter.close();    
-            }
-            
-            {
-                //Create the scs version file, to show which version it works with
-                File versionFile = new File (databaseFile.getPath() + "/version");
-                versionFile.createNewFile();
-
-                FileWriter versionFileWriter = new FileWriter(versionFile.getPath());
-                versionFileWriter.write(scsadmin.version);
-                versionFileWriter.close();
-            }
-            //Create access folder: TODO
-            
-            {
-                //Create branch folder
-                File branches = new File (basePath + "/branches");
-                branches.mkdir();
-
-                //Create branch,
-                File leaf = new File (branches.getPath() + "/leaf");
-                leaf.mkdir();
-                File working = new File (branches.getPath() + "/working");
-                working.mkdir();
-
-                //Now create the diff files in the folders. It will be in XML.
-                Element root = new Element("scs");
-
-                Attribute scsversion = new Attribute("version", scsadmin.version);
-                root.addAttribute(scsversion);
-
-                //Create file.
-                //0 for commit 0
-                    {
-                        File temp = new File(leaf.getPath() + "/0");
-                        temp.createNewFile();
-
-                        FileWriter tempWriter = new FileWriter(temp.getPath());
-                        BufferedWriter tempBuff = new BufferedWriter(tempWriter);
-
-                        Document leafDoc = new Document(root);
-                        tempBuff.write(leafDoc.toXML());
-                        tempBuff.close();
-
-                        //Now write the same to the working branch
-                        //0 for push 0
-                        temp = new File(working.getPath() + "/0");
-                        temp.createNewFile();
-
-                        tempWriter = new FileWriter(temp.getPath());
-                        tempBuff = new BufferedWriter(tempWriter);
-
-                        tempBuff.write(leafDoc.toXML());
-                        tempBuff.close();
-                    }
-            }
-        } catch(IOException ioe) {
-            System.out.println("Unable to open file: " + ioe.getMessage());
-            ioe.printStackTrace();
-            //Delete whole dir if failed to create.
-            repoBase.delete();
-        } catch (Throwable t) {
-            t.printStackTrace();
-            //Need to clean up...
-            repoBase.delete();
-        }
+        Instant start = Instant.now();
+        
+        Instant end = Instant.now();
+        createRepo(repoBase);
+        Duration timeElapsed = Duration.between(start, end);
+        System.out.println("Time elapsed: " + timeElapsed.toNanos()+ " nanoseconds");
         return Command.EXIT_SUCCESS;
     } 
+    
+    private void createRepo(File repoBasePath) {
+        //Get the name of the path
+        String repoBaseName = repoBasePath.getAbsolutePath();
+        try {
+            /*
+             * Create file structure.
+             * Looks like this:
+             * REPO ROOT
+             * |--> db <== Stands for database
+             *   |--> current <== The current revision number
+             *   |--> UUID <== The identification number of this repo
+             *   |--> version <== The current version of the 
+             * |--> master <== `master` folder, where the code resides
+             *   |--> leaf <== The place where the latest revision resides
+             *     |--> current.zip <== The zip archive of the current revision
+             *     |--> diff <== The folder for the diff
+             *       |--> 0 <== Diff for revision 0
+             *       |--> ... (etc, etc...)
+             *     |--> logs <== The revision logs.
+             *   |--> working <== The working branch
+             *       |--> current <== Folder where all the code exists. Use this for comparing
+             *         |-->xxx.txt <== The files in the repo
+             *       |--> diff <== The total diff from the latest revision
+             *       |--> pushes <== The diff for each individual push. Scrapped after each revision
+             *         |--> 0 <== Diff for push 0
+             *         |--> ... (etc, etc...)
+            */
+            
+            //Create db folder
+            DBFolderCreate(repoBaseName);
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            System.err.println("Unable to create file!");
+        }
+    }
+    
+    private void DBFolderCreate (String basePath) throws IOException {
+        //Create the db folder
+        File dbRoot = new File (basePath + "/db");
+        
+        //Create and check whether it exists.
+        if (!dbRoot.mkdir()) {
+            throw new IOException("Unable to create db folder " + dbRoot.getAbsolutePath() + ". Check premissions.");
+        }
+        
+        //Using this as a generalized file writer
+        FileWriter writer;
+        
+        //Create version file
+        {
+            File versionFile = new File (dbRoot.getAbsolutePath() + "/version");
+            if (!versionFile.createNewFile()) {
+                throw new IOException("Unable to create db/current file! IDK what went wrong.");
+            }
+            
+            //Write version
+            writer = new FileWriter(versionFile);
+            writer.write(scsadmin.version);
+            writer.close();
+            
+            //Uninitalize it
+            writer = null;
+        }
+        
+        //Create UUID
+        {
+            File UUIDFile = new File (dbRoot.getAbsolutePath() + "/UUID");
+            if (!UUIDFile.createNewFile()) {
+                throw new IOException("Unable to create db/UUID file! IDK what went wrong.");
+            }
+            
+            //Generate UUID
+            UUID id = UUID.randomUUID();
+            /*The documentation states, `tatic factory to retrieve a type 4 
+             * (pseudo randomly generated) UUID. The UUID is generated using a 
+             * cryptographically strong pseudo random number generator.`
+             * So it should be unique.
+             */
+            String idValue = String.valueOf(id);
+            
+            //Write to file
+            writer = new FileWriter(UUIDFile);
+            writer.write(idValue);
+            writer.close();
+            writer = null;
+        }
+        
+        //create current folder
+        {
+            File currentFile = new File(dbRoot.getAbsolutePath() + "/current");
+            if (!currentFile.createNewFile()) {
+                throw new IOException("Unable to create db/current file! IDK what went wrong.");
+            }
+            
+            //Write to file
+            writer = new FileWriter(currentFile);
+            writer.write(Integer.toString(0));
+            writer.close();
+            writer = null;
+        }
+        //Done!
+    }
+    
+    private void masterFolderCreate (String basePath) throws IOException {
+        File masterRoot = new File (basePath + "/master");
+        
+        //Create and check whether it exists.
+        if (!masterRoot.mkdir()) {
+            throw new IOException("Unable to create master folder " + masterRoot.getAbsolutePath() + ". Check premissions.");
+        }
+        
+        //Create folders and subsiquent files
+        
+        //Leaf file
+        {
+            File leafFile = new File (masterRoot.getAbsolutePath() + "/leaf");
+            
+            //Create and check whether it exists.
+            if (!leafFile.mkdir()) {
+                throw new IOException("Unable to create leaf folder " + leafFile.getAbsolutePath() + ". Check premissions.");
+            }
+            
+            //Create current.zip
+            
+            //Create diff folder
+            {
+                File diffFolder = new File(leafFile.getAbsolutePath() + "/diff");
+                if (!diffFolder.mkdir()) {
+                    throw new IOException("Unable to create leaf folder " + leafFile.getAbsolutePath() + ". Check premissions.");
+                }
+                //Then create commit 0
+                File rev0 = new File (diffFolder.getAbsolutePath() + "/0");
+                rev0.createNewFile();
+                
+                //Create xml parser
+                
+                //Root element
+                Element root = new Element("scs");
+                
+                //Revision no.
+                Element revElement = new Element("rev");
+                Attribute revAttribute = new Attribute("value", "0");
+                revElement.addAttribute(revAttribute);
+                
+                //Version element, for the sake of compatability
+                Element versionElement = new Element("version");
+                Attribute versionAttribute = new Attribute("value", scsadmin.version);
+                versionElement.addAttribute(revAttribute);
+                
+                //Bunch everything together
+                root.appendChild(versionElement);
+                root.appendChild(versionElement);
+                Document toWrite = new Document(root);
+                
+                FileWriter xmlFileWriter = new FileWriter(rev0);
+                xmlFileWriter.write(toWrite.toXML());
+                xmlFileWriter.close();
+            }
+            
+            //Create log file
+            {
+                File logFile = new File(masterRoot + "/logs");
+                logFile.createNewFile();
+                
+                Element logElement = new Element("logs");
+                Document logDocument = new Document(logElement);
+                
+                FileWriter xmlFileWriter = new FileWriter(logFile);
+                xmlFileWriter.write(logDocument.toXML());
+                xmlFileWriter.close();
+                //Done. Do nothing for now
+            }
+        }
+    }
 }
