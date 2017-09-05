@@ -3,7 +3,6 @@ package scsadmin;
 import scstools.Command;
 import java.io.File;
 import java.util.UUID;
-import java.util.zip.*;
 import java.io.*;
 import java.time.Duration;
 import java.time.Instant;

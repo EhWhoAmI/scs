@@ -12,11 +12,9 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.imageio.stream.FileImageInputStream;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -39,6 +37,8 @@ public class ScsServer extends JFrame{
     //Logger
     Logging logger = new Logging("/scsserver.log", true, false);
         
+    //For things.
+    JButton kill;
     private ScsServer() {
         super("SCS server control panel");
         setSize(600, 300);
@@ -111,9 +111,19 @@ public class ScsServer extends JFrame{
         
         JButton start = new JButton("Start Server");
         start.setEnabled(false);
+        start.addActionListener((e) -> {
+            logger.log("Starting server...");
+            serverRunning = true;
+            serverStatus.setText("Server status: Starting...");
+            //Add server start code here
+            
+            //When done,
+            kill.setEnabled(true);
+            start.setEnabled(false);
+        });
         pane.add(start);
         
-        JButton kill = new JButton("Kill Server");
+        kill = new JButton("Kill Server");
         kill.setEnabled(false);
         pane.add(kill);
         
