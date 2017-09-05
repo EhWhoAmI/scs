@@ -19,8 +19,6 @@ because we need a good platform to host and to do source control.
     - Short answer: Why not.
     - Long one: Because I am better in java and java sounds cool.
 
-===================
-
 ### How this works
 
 We plan to have something like this:

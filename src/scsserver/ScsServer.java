@@ -12,6 +12,7 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -38,7 +39,16 @@ public class ScsServer extends JFrame{
     Logging logger = new Logging("/scsserver.log", true, false);
         
     //For things.
-    JButton kill;
+    private JButton kill;
+    private JButton info;
+    private JButton chooseRepo;
+    private JButton start;
+    private JButton logs;
+    private JButton config;
+    private JLabel title;
+    private JLabel servingRepo;
+    private JLabel serverStatus;
+    
     private ScsServer() {
         super("SCS server control panel");
         setSize(600, 300);
@@ -62,7 +72,7 @@ public class ScsServer extends JFrame{
 
             @Override
             public void windowClosed(WindowEvent e) {
-                System.out.println("Window event!");
+                //Skip...
             }
 
             @Override
@@ -100,16 +110,16 @@ public class ScsServer extends JFrame{
         } catch (UnsupportedLookAndFeelException ex) {
             Logger.getLogger(ScsServer.class.getName()).log(Level.SEVERE, null, ex);
         }
-        JLabel title = new JLabel("SCS Server Control Panel");
+        title = new JLabel("SCS Server Control Panel");
         pane.add(title);
         
-        JLabel servingRepo = new JLabel("Serving:");
+        servingRepo = new JLabel("Serving:");
         pane.add(servingRepo);
         
-        JLabel serverStatus = new JLabel("Server status: Not running");
+        serverStatus = new JLabel("Server status: Not running");
         pane.add(serverStatus);
         
-        JButton start = new JButton("Start Server");
+        start = new JButton("Start Server");
         start.setEnabled(false);
         start.addActionListener((e) -> {
             logger.log("Starting server...");
@@ -127,7 +137,7 @@ public class ScsServer extends JFrame{
         kill.setEnabled(false);
         pane.add(kill);
         
-        JButton chooseRepo = new JButton("Choose Repo");
+        chooseRepo = new JButton("Choose Repo");
         chooseRepo.addActionListener((e) -> {
             JFileChooser chooser = new JFileChooser();
             chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -153,7 +163,26 @@ public class ScsServer extends JFrame{
         });
         pane.add(chooseRepo);
         
-        JButton logs = new JButton("Show Logs");
+        config = new JButton("SCS Server Config");
+        config.addActionListener((e) -> {
+            //Open config file
+            File confFile = new File(System.getProperty("user.dir") + "/scsserver/conf.properties");
+            try {
+                if (confFile.exists()) {
+                    //Read from config file
+                } else {
+                    //Create file
+                    confFile.createNewFile();
+                }
+            }catch(IOException ioe){
+                System.err.println("IO ERROR: " + ioe.getMessage());
+                ioe.printStackTrace();
+                
+            }
+        });
+        pane.add(config);
+        
+        logs = new JButton("Show Logs");
         logs.addActionListener((e) -> {
             try {
                 //Open the file in a new window
@@ -182,7 +211,7 @@ public class ScsServer extends JFrame{
         });
         pane.add(logs);
         
-        JButton info = new JButton("About scs");
+        info = new JButton("About scs");
         info.addActionListener((e) -> {
             //Show about
             JOptionPane.showMessageDialog(pane, "SCS\nVersion 0.0.0.0");
