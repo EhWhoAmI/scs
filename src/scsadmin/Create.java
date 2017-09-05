@@ -87,9 +87,12 @@ public class Create implements Command {
              *         |--> 0 <== Diff for push 0
              *         |--> ... (etc, etc...)
             */
+            //Create a readme.
             
             //Create db folder
             DBFolderCreate(repoBaseName);
+            //Create master folder
+            masterFolderCreate(repoBaseName);
         } catch (IOException ioe) {
             ioe.printStackTrace();
             System.err.println("Unable to create file!");
@@ -207,11 +210,16 @@ public class Create implements Command {
                 //Version element, for the sake of compatability
                 Element versionElement = new Element("version");
                 Attribute versionAttribute = new Attribute("value", scsadmin.version);
-                versionElement.addAttribute(revAttribute);
+                versionElement.addAttribute(versionAttribute);
                 
+                Element dateElement = new Element("date");
+                Attribute dateAttribute = new Attribute("value", new Date().toString());
+                dateElement.addAttribute(dateAttribute);
                 //Bunch everything together
+                
+                root.appendChild(revElement);
                 root.appendChild(versionElement);
-                root.appendChild(versionElement);
+                root.appendChild(dateElement);
                 Document toWrite = new Document(root);
                 
                 FileWriter xmlFileWriter = new FileWriter(rev0);
@@ -231,6 +239,39 @@ public class Create implements Command {
                 xmlFileWriter.write(logDocument.toXML());
                 xmlFileWriter.close();
                 //Done. Do nothing for now
+            }
+        }
+        
+        //Working folder
+        {
+            File workingFolder = new File (masterRoot + "/working");
+            if (!workingFolder.mkdir()) {
+                    throw new IOException("Unable to create working folder " + workingFolder.getAbsolutePath() + ". Check premissions.");
+            }
+            
+            //Add a curent folder for all code
+            File currentFolder = new File (workingFolder.getAbsolutePath() + "/current");
+            if (!currentFolder.mkdir()) {
+                    throw new IOException("Unable to create current folder " + workingFolder.getAbsolutePath() + ". Check premissions.");
+            }
+            
+            File diffFile = new File (workingFolder.getAbsolutePath() + "/diff");
+            if (!diffFile.createNewFile()) {
+                throw new IOException("Unable to create leaf folder " + diffFile.getAbsolutePath() + ". Check premissions.");
+            }
+            
+            //Write to diff file
+            Element scs = new Element("scs");
+            //That's all. Will parse when commiting
+            Document scsDocument = new Document(scs);
+            FileWriter xmlFileWriter = new FileWriter(diffFile);
+            xmlFileWriter.write(scsDocument.toXML());
+            xmlFileWriter.flush();
+            
+            //Pushes folder for all pushes
+            File pushes = new File (workingFolder.getAbsolutePath() + "/push");
+            if (!pushes.mkdir()) {
+                    throw new IOException("Unable to create push folder " + workingFolder.getAbsolutePath() + ". Check premissions.");
             }
         }
     }
