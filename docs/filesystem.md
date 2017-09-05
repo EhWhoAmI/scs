@@ -5,6 +5,7 @@ The file structure for the repos are here:
 Repo create
 ==============
   Looks like this:
+  ```
   REPO ROOT
   |--> db <== Stands for database
     |--> current <== The current revision number
@@ -24,3 +25,4 @@ Repo create
         |--> pushes <== The diff for each individual push. Scrapped after each revision
           |--> 0 <== Diff for push 0
           |--> ... (etc, etc...)
+```
