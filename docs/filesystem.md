@@ -33,5 +33,5 @@ REPO ROOT
 |--> .scs
   |--> HEAD <== The file that stores the repo path
   |--> UUID <== The UUID of the repo
-  |-->
+  |--> commit <== The commit of the repo
 ```

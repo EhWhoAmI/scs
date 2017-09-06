@@ -7,17 +7,15 @@ package scsserver;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import static java.awt.Frame.ICONIFIED;
 import java.awt.GridLayout;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.ServerSocket;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.logging.Level;
@@ -65,6 +63,8 @@ public class ScsServer extends JFrame{
      * The current instance
      */
     private static ScsServer currentInstance;
+    
+    private static final int serverport = 19319; //SCS in numbers of the alphabet
     //Logger
     Logging logger = new Logging("/scsserver.log", true, false);
         
@@ -72,7 +72,7 @@ public class ScsServer extends JFrame{
     private JButton kill;
     private JButton info;
     private JButton chooseRepo;
-    private JButton start;
+    private JButton startServerBttn;
     private JButton logs;
     private JButton config;
     private JLabel title;
@@ -107,12 +107,12 @@ public class ScsServer extends JFrame{
         pane.add(serverStatus);
         
         //Button to start server
-        start = new JButton("Start Server");
-        start.setEnabled(false);
-        start.addActionListener((e) -> {
+        startServerBttn = new JButton("Start Server");
+        startServerBttn.setEnabled(false);
+        startServerBttn.addActionListener((e) -> {
             startServer();
         });
-        pane.add(start);
+        pane.add(startServerBttn);
         
         //Button to start server: Not implemented yet
         kill = new JButton("Kill Server");
@@ -252,7 +252,7 @@ public class ScsServer extends JFrame{
             JPanel winPanel = new JPanel();
             winPanel.setLayout(new GridLayout(3, 3));
             JLabel title = new JLabel("SCS Settings");
-            winPanel.add(title, 1, 1);
+            winPanel.add(title);
             
             {
                 //The file choose
@@ -287,16 +287,16 @@ public class ScsServer extends JFrame{
         serverRunning = true;
         serverStatus.setText("Server status: Starting...");
         //Add server start code here
-
+        
         //When done,
         kill.setEnabled(true);
-        start.setEnabled(false);
+        startServerBttn.setEnabled(false);
     }
     
     private void chooseRepoDialog () {
         JFileChooser chooser = new JFileChooser();
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        chooser.setDialogTitle("choosertitle");
+        chooser.setDialogTitle("Choose SCS repo");
         chooser.setAcceptAllFileFilterUsed(false);
 
         if (chooser.showOpenDialog(pane) == JFileChooser.APPROVE_OPTION) {
@@ -314,14 +314,49 @@ public class ScsServer extends JFrame{
                 settings.setProperty("repopath", repoFile.getAbsolutePath());
                 //Edit label
                 servingRepo.setText("Serving: " + repoFile.getAbsolutePath());
-                start.setEnabled(true);
+                startServerBttn.setEnabled(true);
             }
         }
     }
+    
     class windowlistener implements WindowListener {
         @Override
         public void windowOpened(WindowEvent e) {
-            //Do nothing
+            //Open config file. If it exists, good, check it, if it doesn't, make it.
+            File configFile = new File(System.getProperty("user.dir") + "/scsserver/conf.properties");
+            if (!configFile.exists()) {
+                try {
+                    //Create parent dir. It will complain if I don't
+                    if(!configFile.getParentFile().exists()) {
+                        configFile.getParentFile().mkdirs();
+                    }
+                    //Create file
+                    configFile.createNewFile();
+                    //Write default config
+                    settings.setProperty("repopath", "");
+                    settings.store(new FileOutputStream(configFile), "This is for SCS server");
+                } catch (IOException ex) {
+                    Logger.getLogger(ScsServer.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            else {
+                try {
+                    //Read from config file
+                    FileInputStream confin = new FileInputStream(configFile);
+                    settings.load(confin);
+                    confin.close();
+                    
+                    //For presetting. Makes things easier
+                    repoFile = new File(settings.getProperty("repopath"));
+                    servingRepo.setText("Serving: " + repoFile.getAbsolutePath());
+                    
+                    startServerBttn.setEnabled(true);
+                    //Tests
+                    settings.list(System.out);
+                } catch (IOException ex) {
+                    Logger.getLogger(ScsServer.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
         }
 
         @Override
@@ -330,7 +365,9 @@ public class ScsServer extends JFrame{
                 //Kill window
                 try {
                     //Store settings
-                    settings.store(new FileOutputStream(System.getProperty("user.dir") + "/scsserver/conf.properties"), "NONE!!!");
+                    FileOutputStream confo = new FileOutputStream(System.getProperty("user.dir") + "/scsserver/conf.properties");
+                    settings.store(confo, "NONE!!!");
+                    confo.close();
                 } catch (FileNotFoundException ex) {
                     Logger.getLogger(ScsServer.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (IOException ex) {
@@ -376,6 +413,6 @@ public class ScsServer extends JFrame{
      * @param args
      */
     public static void main(String[] args) {
-        ScsServer server = ScsServer.getInstance();
+        ScsServer server = new ScsServer();
     }
 }
