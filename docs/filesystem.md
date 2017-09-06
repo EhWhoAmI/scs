@@ -1,9 +1,9 @@
 File structure
-----------------
+=================
 The file structure for the repos are here:
 
-Repo create
-==============
+### Repo create
+
   Looks like this:
   ```
   REPO ROOT
@@ -25,4 +25,13 @@ Repo create
         |--> pushes <== The diff for each individual push. Scrapped after each revision
           |--> 0 <== Diff for push 0
           |--> ... (etc, etc...)
+```
+
+### Checked out Repo
+```
+REPO ROOT
+|--> .scs
+  |--> HEAD <== The file that stores the repo path
+  |--> UUID <== The UUID of the repo
+  |-->
 ```
