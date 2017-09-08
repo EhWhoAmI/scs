@@ -10,6 +10,7 @@ import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -95,7 +96,7 @@ public class ScsServer extends JFrame {
     //The repo data
     int repoCommitNumber;
     String repoUUID;
-
+    boolean currentPushExists;
     private ScsServer() {
         super("SCS server control panel");
         //Set up window
@@ -356,6 +357,14 @@ public class ScsServer extends JFrame {
                         else {
                             throw new FileNotFoundException();
                         }
+                        //Check if current.zip in working exists
+                        File currentZip = new File (repoFile + "/branches/working/current.zip");
+                        if (currentZip.exists()) {
+                            currentPushExists = true;
+                        }
+                        else {
+                            currentPushExists = false;
+                        }
                     } catch (FileNotFoundException ex) {
                         Logger.getLogger(ScsServer.class.getName()).log(Level.SEVERE, null, ex);
                         //Cannot find file
@@ -368,7 +377,6 @@ public class ScsServer extends JFrame {
     }
 
     class windowlistener implements WindowListener {
-
         @Override
         public void windowOpened(WindowEvent e) {
             //Open config file. If it exists, good, check it, if it doesn't, make it.
@@ -502,6 +510,7 @@ public class ScsServer extends JFrame {
                                 connection = sock.accept();
 
                                 //Handle request
+                                handle(connection);
                                 connection.close();
                             }
                         }
@@ -530,14 +539,15 @@ public class ScsServer extends JFrame {
         BufferedReader br = new BufferedReader(isr);
 
         //Set up output
-        PrintWriter writer = new PrintWriter(new BufferedOutputStream(connection.getOutputStream()));
+        BufferedOutputStream outputStream = new BufferedOutputStream(connection.getOutputStream());
+        PrintWriter writer = new PrintWriter(outputStream);
 
         //Get the data. The code to check whether it is a friend is 'c6711b33d73157f21d70ef7d1341e016e92f8443cedd7de866'
         String friendStr = br.readLine();
-        if (!friendStr.equals("c6711b33d73157f21d70ef7d1341e016e92f8443cedd7de866")) {
+        //if (!friendStr.equals("c6711b33d73157f21d70ef7d1341e016e92f8443cedd7de866")) {
             //Deny. Might be hacker
-            return;
-        }
+            //return;
+        //}
         //Then, get the command he wants to process
         String request = br.readLine();
         if (request.startsWith("GET")) {
@@ -551,7 +561,23 @@ public class ScsServer extends JFrame {
                 return;
             }
             //Then send data
-            
+            //Find current.zip
+            if (currentPushExists) {
+                //Sent that file
+                FileInputStream currentInput = new FileInputStream(repoFile.getAbsolutePath() + "/master/working/current.zip");
+                BufferedInputStream currentStream = new BufferedInputStream(currentInput);
+                byte[] buff = new byte[1025];
+                while (currentStream.read(buff) != -1) {
+                    //Write to link
+                    writer.write(new String (buff, "UTF-8"));
+                }
+                
+            }
+            else {
+                //Create zip for them.
+            }
+        } else {
+            writer.print("HIHI");
         }
     }
 

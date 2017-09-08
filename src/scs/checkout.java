@@ -2,6 +2,7 @@ package scs;
 
 import scstools.Command;
 import java.io.*;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Scanner;
@@ -131,7 +132,29 @@ public class checkout implements Command
             }
         }
         else {
-            System.out.println("The format you chose is wrong. Please get a file protocol, eg. http:// or https://, or \"file:///\" for local files");
+            //Open server socket
+            try (Socket digit = new Socket(args[0], 19319);
+            BufferedReader in = new BufferedReader(
+                new InputStreamReader(digit.getInputStream()));
+            ) {
+
+            digit.setSoTimeout(20000);
+            PrintStream out = new PrintStream(
+                digit.getOutputStream());
+            //Verification string
+            out.print("c6711b33d73157f21d70ef7d1341e016e92f8443cedd7de866");
+            //Then give the command
+            out.print("GET");
+            //Read the repo commit
+            int repoCommit = in.read();
+            System.out.println("Repo commit: " + repoCommit);
+               
+            out.close();
+            in.close();
+            digit.close();
+        } catch (IOException e) {
+            System.out.println("IO Error:" + e.getMessage());
+        }
         }
         return Command.EXIT_SUCCESS;
     }

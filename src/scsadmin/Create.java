@@ -81,6 +81,7 @@ public class Create implements Command {
              *   |--> working <== The working branch
              *       |--> current <== Folder where all the code exists. Use this for comparing
              *         |-->xxx.txt <== The files in the repo
+             *       |--> current.zip <== The zip fole for the current code.
              *       |--> diff <== The total diff from the latest revision
              *       |--> pushes <== The diff for each individual push. Scrapped after each revision
              *         |--> 0 <== Diff for push 0
