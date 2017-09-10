@@ -25,7 +25,6 @@ import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
-import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.Scanner;
@@ -61,7 +60,7 @@ public class ScsServer extends JFrame {
     /**
      * The file for the repo
      */
-    private File repoFile;
+    private File repoBaseFile;
 
     /**
      * To check whether the server is running
@@ -71,7 +70,7 @@ public class ScsServer extends JFrame {
     /**
      * The settings of the server
      */
-    private Properties settings = new Properties();
+    private Properties settingsProperties = new Properties();
 
     /**
      * The current instance
@@ -83,16 +82,16 @@ public class ScsServer extends JFrame {
     Logging logger = new Logging("/scsserver.log", true, true);
 
     //For things.
-    private JButton kill;
-    private JButton info;
-    private JButton chooseRepo;
+    private JButton killServerButton;
+    private JButton infoButton;
+    private JButton chooseRepoButton;
     private JButton startServerBttn;
-    private JButton logs;
-    private JButton config;
-    private JLabel title;
-    private JLabel servingRepo;
-    private JLabel serverStatus;
-    private JPanel pane;
+    private JButton showLogsButton;
+    private JButton configButton;
+    private JLabel titleLabel;
+    private JLabel servingRepoLabel;
+    private JLabel serverStatusLabel;
+    private JPanel mainPane;
 
     //The repo data
     int repoCommitNumber;
@@ -108,22 +107,22 @@ public class ScsServer extends JFrame {
         addWindowListener(new windowlistener());
 
         //Panel to store all the components
-        pane = new JPanel();
-        pane.setLayout(new GridLayout(3, 4, 10, 10)); //Set the layout
+        mainPane = new JPanel();
+        mainPane.setLayout(new GridLayout(3, 4, 10, 10)); //Set the layout
 
         setLookAndFeel();
 
         //Title
-        title = new JLabel("SCS Server Control Panel");
-        pane.add(title);
+        titleLabel = new JLabel("SCS Server Control Panel");
+        mainPane.add(titleLabel);
 
         //The repo that we are serving
-        servingRepo = new JLabel("Serving:");
-        pane.add(servingRepo);
+        servingRepoLabel = new JLabel("Serving:");
+        mainPane.add(servingRepoLabel);
 
         //The server status. Running, starting, not running
-        serverStatus = new JLabel("Server status: Not running");
-        pane.add(serverStatus);
+        serverStatusLabel = new JLabel("Server status: Not running");
+        mainPane.add(serverStatusLabel);
 
         //Button to start server
         startServerBttn = new JButton("Start Server");
@@ -131,44 +130,44 @@ public class ScsServer extends JFrame {
         startServerBttn.addActionListener((e) -> {
             startServer();
         });
-        pane.add(startServerBttn);
+        mainPane.add(startServerBttn);
 
         //Button to start server: Not implemented yet
-        kill = new JButton("Kill Server");
-        kill.setEnabled(false);
-        pane.add(kill);
+        killServerButton = new JButton("Kill Server");
+        killServerButton.setEnabled(false);
+        mainPane.add(killServerButton);
 
         //Button to choose repo
-        chooseRepo = new JButton("Choose Repo");
-        chooseRepo.addActionListener((e) -> {
+        chooseRepoButton = new JButton("Choose Repo");
+        chooseRepoButton.addActionListener((e) -> {
             chooseRepoDialog();
         });
-        pane.add(chooseRepo);
+        mainPane.add(chooseRepoButton);
 
         //Config
-        config = new JButton("SCS Server Config");
-        config.addActionListener((e) -> {
+        configButton = new JButton("SCS Server Config");
+        configButton.addActionListener((e) -> {
             configWin();
         });
-        pane.add(config);
+        mainPane.add(configButton);
 
         //Log show
-        logs = new JButton("Show Logs");
-        logs.addActionListener((e) -> {
+        showLogsButton = new JButton("Show Logs");
+        showLogsButton.addActionListener((e) -> {
             logWin();
         });
-        pane.add(logs);
+        mainPane.add(showLogsButton);
 
         //About. Nothing to show
-        info = new JButton("About scs");
-        info.addActionListener((e) -> {
+        infoButton = new JButton("About scs");
+        infoButton.addActionListener((e) -> {
             //Show about
-            JOptionPane.showMessageDialog(pane, "SCS\nVersion 0.0.0.0");
+            JOptionPane.showMessageDialog(mainPane, "SCS\nVersion 0.0.0.0");
         });
-        pane.add(info);
+        mainPane.add(infoButton);
 
         //Add all the panes
-        add(pane);
+        add(mainPane);
 
         setResizable(false);
         setVisible(true);
@@ -241,28 +240,28 @@ public class ScsServer extends JFrame {
      */
     private void configWin() {
         //Open config file
-        File confFile = new File(System.getProperty("user.dir") + "/scsserver/conf.properties");
+        File configPropertiesFile = new File(System.getProperty("user.dir") + "/scsserver/conf.properties");
         try {
-            if (confFile.exists()) {
+            if (configPropertiesFile.exists()) {
                 //Read from config file
 
-                FileInputStream configInputStream = new FileInputStream(confFile);
-                settings.load(configInputStream);
+                FileInputStream configInputStream = new FileInputStream(configPropertiesFile);
+                settingsProperties.load(configInputStream);
 
             } else {
                 //Create file
-                confFile.getParentFile().mkdir();
-                confFile.createNewFile();
+                configPropertiesFile.getParentFile().mkdir();
+                configPropertiesFile.createNewFile();
 
                 //Add the default options
                 String filename = "";
-                if (repoFile != null) {
-                    filename = repoFile.getAbsolutePath();
+                if (repoBaseFile != null) {
+                    filename = repoBaseFile.getAbsolutePath();
                 }
-                settings.setProperty("repopath", filename);
+                settingsProperties.setProperty("repopath", filename);
 
                 //Store settings
-                settings.store(new FileOutputStream(confFile), "NONE!!!");
+                settingsProperties.store(new FileOutputStream(configPropertiesFile), "NONE!!!");
             }
             //Open settings window
             JFrame configWin = new JFrame("Config");
@@ -306,7 +305,7 @@ public class ScsServer extends JFrame {
     private void startServer() {
         logger.log("Starting server...");
         serverRunning = true;
-        serverStatus.setText("Server status: Starting...");
+        serverStatusLabel.setText("Server status: Starting...");
         //Add server start code here
         Runnable server = () -> {
             //Server code here.
@@ -315,7 +314,7 @@ public class ScsServer extends JFrame {
         Thread t = new Thread(server);
         t.start();
         //When done,
-        kill.setEnabled(true);
+        killServerButton.setEnabled(true);
         startServerBttn.setEnabled(false);
     }
 
@@ -325,24 +324,24 @@ public class ScsServer extends JFrame {
         chooser.setDialogTitle("Choose SCS repo");
         chooser.setAcceptAllFileFilterUsed(false);
 
-        if (chooser.showOpenDialog(pane) == JFileChooser.APPROVE_OPTION) {
-            repoFile = chooser.getSelectedFile();
+        if (chooser.showOpenDialog(mainPane) == JFileChooser.APPROVE_OPTION) {
+            repoBaseFile = chooser.getSelectedFile();
             //Check whether it is a scs repo
-            String[] fileList = repoFile.list();
-            if (fileList.length == 0 | !isSCSRepo(repoFile)) {
+            String[] fileList = repoBaseFile.list();
+            if (fileList.length == 0 | !isSCSRepo(repoBaseFile)) {
                 //Is not an scs repo.
-                JOptionPane.showMessageDialog(pane, repoFile.getAbsolutePath() + "is not an scs repo");
-                repoFile = null;
+                JOptionPane.showMessageDialog(mainPane, repoBaseFile.getAbsolutePath() + "is not an scs repo");
+                repoBaseFile = null;
             } else {
                 //Set properties
-                settings.setProperty("repopath", repoFile.getAbsolutePath());
+                settingsProperties.setProperty("repopath", repoBaseFile.getAbsolutePath());
                 //Edit label
-                servingRepo.setText("Serving: " + repoFile.getAbsolutePath());
+                servingRepoLabel.setText("Serving: " + repoBaseFile.getAbsolutePath());
                 startServerBttn.setEnabled(true);
                 //Get repo data
                 {
-                    File repoCommitFile = new File(repoFile.getAbsolutePath() + "/db/current");
-                    File repoUUIDFile = new File(repoFile.getAbsolutePath() + "/db/UUID");
+                    File repoCommitFile = new File(repoBaseFile.getAbsolutePath() + "/db/current");
+                    File repoUUIDFile = new File(repoBaseFile.getAbsolutePath() + "/db/UUID");
                     try {
                         if (repoCommitFile.exists()) {
                             Scanner repocireader = new Scanner(repoCommitFile);
@@ -364,7 +363,7 @@ public class ScsServer extends JFrame {
                             throw new FileNotFoundException();
                         }
                         //Check if current.zip in working exists
-                        File currentZip = new File(repoFile + "/branches/working/current.zip");
+                        File currentZip = new File(repoBaseFile + "/branches/working/current.zip");
                         if (currentZip.exists()) {
                             currentPushExists = true;
                         } else {
@@ -395,8 +394,8 @@ public class ScsServer extends JFrame {
                     //Create file
                     configFile.createNewFile();
                     //Write default config
-                    settings.setProperty("repopath", "");
-                    settings.store(new FileOutputStream(configFile), "This is for SCS server");
+                    settingsProperties.setProperty("repopath", "");
+                    settingsProperties.store(new FileOutputStream(configFile), "This is for SCS server");
                 } catch (IOException ex) {
                     Logger.getLogger(ScsServer.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -404,20 +403,20 @@ public class ScsServer extends JFrame {
                 try {
                     //Read from config file
                     FileInputStream confin = new FileInputStream(configFile);
-                    settings.load(confin);
+                    settingsProperties.load(confin);
                     confin.close();
 
                     //For presetting. Makes things easier
-                    repoFile = new File(settings.getProperty("repopath"));
-                    if (!isSCSRepo(repoFile)) {
+                    repoBaseFile = new File(settingsProperties.getProperty("repopath"));
+                    if (!isSCSRepo(repoBaseFile)) {
                         //Exit
-                        System.err.println("The folder " + repoFile.getAbsolutePath() + " is not a scs repo");
+                        System.err.println("The folder " + repoBaseFile.getAbsolutePath() + " is not a scs repo");
                     } else {
                         //Get uuid and repo commit.
                         //Get repo data
                         {
-                            File repoCommitFile = new File(repoFile.getAbsolutePath() + "/db/current");
-                            File repoUUIDFile = new File(repoFile.getAbsolutePath() + "/db/UUID");
+                            File repoCommitFile = new File(repoBaseFile.getAbsolutePath() + "/db/current");
+                            File repoUUIDFile = new File(repoBaseFile.getAbsolutePath() + "/db/UUID");
                             try {
                                 if (repoCommitFile.exists()) {
                                     Scanner repocireader = new Scanner(repoCommitFile);
@@ -439,7 +438,7 @@ public class ScsServer extends JFrame {
                                     throw new FileNotFoundException();
                                 }
                                 //Check if current.zip in working exists
-                                File currentZip = new File(repoFile + "/branches/working/current.zip");
+                                File currentZip = new File(repoBaseFile + "/branches/working/current.zip");
                                 if (currentZip.exists()) {
                                     currentPushExists = true;
                                 } else {
@@ -451,7 +450,7 @@ public class ScsServer extends JFrame {
                                 JOptionPane.showMessageDialog(null, "Unable to open repo", "The format of the repo must not be correct. Please try again.", JOptionPane.WARNING_MESSAGE);
                             }
                         }
-                        servingRepo.setText("Serving: " + repoFile.getAbsolutePath());
+                        servingRepoLabel.setText("Serving: " + repoBaseFile.getAbsolutePath());
 
                         startServerBttn.setEnabled(true);
                     }
@@ -468,7 +467,7 @@ public class ScsServer extends JFrame {
                 try {
                     try ( //Store settings
                             FileOutputStream confo = new FileOutputStream(System.getProperty("user.dir") + "/scsserver/conf.properties")) {
-                        settings.store(confo, "NONE!!!");
+                        settingsProperties.store(confo, "NONE!!!");
                     }
                 } catch (FileNotFoundException ex) {
                     Logger.getLogger(ScsServer.class.getName()).log(Level.SEVERE, null, ex);
@@ -557,74 +556,74 @@ public class ScsServer extends JFrame {
                             Socket connection = sSock.accept();
 
                             OutputStream outputStream = connection.getOutputStream();
-                            BufferedOutputStream write = new BufferedOutputStream(outputStream);
+                            BufferedOutputStream serverOutput = new BufferedOutputStream(outputStream);
 
                             InputStream inputStream = connection.getInputStream();
-                            BufferedInputStream in = new BufferedInputStream(inputStream);
+                            BufferedInputStream serverInput = new BufferedInputStream(inputStream);
 
                             //Read the enter code. ("c6711b33d73157f21d70ef7d1341e016e92f8443cedd7de866")
                             byte[] verifyCode = new byte[50];
-                            in.read(verifyCode);
+                            serverInput.read(verifyCode);
 
                             if (verifyCode.equals("c6711b33d73157f21d70ef7d1341e016e92f8443cedd7de866".getBytes("UTF-8"))) {
                                 //Kill
                                 log.log("Denied access to someone, got " + verifyCode);
 
                                 //Close everything
-                                write.close();
+                                serverOutput.close();
                                 outputStream.close();
                                 connection.close();
                                 continue;
                             } else {
                                 log.log("Accepted someone: Getting command");
-                                byte[] code = new byte[3];
-                                in.read(code);
+                                byte[] inputcommand = new byte[3];
+                                serverInput.read(inputcommand);
                                 
                                 //Parse code
                                 
-                                if ((new String(code, "UTF-8")).equals("get")) {
-                                    write.write(2); //2 for ok
+                                if ((new String(inputcommand, "UTF-8")).equals("get")) {
+                                    serverOutput.write(2); //2 for ok
                                     
                                     log.log("GET repo.");
-                                    write.write(repoCommitNumber);
+                                    serverOutput.write(repoCommitNumber);
 
                                     //Send uuid
                                     log.log("Sending uuid");
-                                    write.write((repoUUID).getBytes("UTF-8"));
+                                    serverOutput.write((repoUUID).getBytes("UTF-8"));
 
                                     //Send repo name
-                                    write.write(repoFile.getName().length());
-                                    write.write(repoFile.getName().getBytes("UTF-8"));
+                                    serverOutput.write(repoBaseFile.getName().length());
+                                    serverOutput.write(repoBaseFile.getName().getBytes("UTF-8"));
                                     
                                     //Send repo data, find current.zip
-                                    File workingZip = new File(repoFile.getAbsolutePath() + "/master/working/current.zip");
+                                    File workingZip = new File(repoBaseFile.getAbsolutePath() + "/master/working/current.zip");
                                     if (workingZip.exists()) {
                                         //Then send the data
                                         log.log("Sending repo size: " + workingZip.length());
                                         //Send size of repo
                                         String len = Long.toString(workingZip.length());
                                         byte[] fileLen = len.getBytes("UTF-8");
-                                        write.write(fileLen.length);
-                                        write.write(fileLen);
+                                        serverOutput.write(fileLen.length);
+                                        serverOutput.write(fileLen);
                                         
                                         //Then open the file
                                         FileInputStream currentzip = new FileInputStream(workingZip);
                                         byte[] buff = new byte[1000];
                                         while (currentzip.read(buff) != -1) {
-                                            write.write(buff);
+                                            serverOutput.write(buff);
                                         }
                                     }
                                     else {
-                                        write.write(0);
+                                        serverOutput.write(0);
                                     }
                                 }
                                 else {
-                                    write.write(1); //For not ok.
-                                    log.log("Failed to recieve command. Got " + new String(code, "UTF-8"));
+                                    serverOutput.write(1); //For not ok.
+                                    log.log("Failed to recieve command. Got " + new String(inputcommand, "UTF-8"));
                                 }
                             }
                             //Close everything
-                            write.close();
+                            serverOutput.close();
                             outputStream.close();
                             connection.close();
                         }
