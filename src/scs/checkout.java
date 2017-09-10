@@ -148,17 +148,50 @@ public class checkout implements Command
                 byte[] toW = "c6711b33d73157f21d70ef7d1341e016e92f8443cedd7de866".getBytes("UTF-8");
                 out.write(toW);
                 out.flush();
-
+                
+                //Send command "GET"
+                byte[] code = ("get".getBytes("UTF-8"));
+                out.write(code);
+                out.flush();
+                
+                //Check
+                if (in.read() == 1) {
+                    System.err.println("Error, unable to get repo.");
+                    return EXIT_FAILURE;
+                }
                 int repoCommit = in.read();
-
+                
                 //Get uuid
                 byte[] uuid = new byte[36];
                 in.read(uuid);
+                
                 //Get repo name
                 byte[] repoName = new byte[in.read()];
                 
                 in.read(repoName);
+                
                 System.out.println(new String(repoName, utf8));
+                
+                //Get the repo zip size
+                int zipSizeStr = in.read();
+                
+                if (zipSizeStr != 0) {
+                    System.out.println("Got zip: " + zipSizeStr);
+                    byte[] zipLength = new byte[zipSizeStr];
+                    in.read(zipLength);
+                    //Then read from the zip
+                    String zipLen = new String(zipLength, utf8);
+                    System.out.println("Zip size: " + zipLen);
+                    byte[] zip = new byte[Integer.parseInt(zipLen)];
+                    in.read(zip);
+                    
+                    File zipFile = new File(((args.length == 2)? args[1]:new String(repoName, utf8)) + "/current.zip");
+                    zipFile.createNewFile();
+                    
+                    FileOutputStream zipFileOutputStream = new FileOutputStream(zipFile);
+                    zipFileOutputStream.write(zip);
+                }
+                //
                 //Create .scs if it equals to 0
                 if (repoCommit == 0) {
                     File scsFile;

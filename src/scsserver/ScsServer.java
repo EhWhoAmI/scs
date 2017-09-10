@@ -25,6 +25,7 @@ import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.Scanner;
@@ -575,17 +576,52 @@ public class ScsServer extends JFrame {
                                 connection.close();
                                 continue;
                             } else {
-                                log.log("Accepted someone: Giving revision");
-
-                                write.write(repoCommitNumber);
-
-                                //Send uuid
-                                log.log("Sending uuid");
-                                write.write((repoUUID).getBytes("UTF-8"));
+                                log.log("Accepted someone: Getting command");
+                                byte[] code = new byte[3];
+                                in.read(code);
                                 
-                                //Send repo name
-                                write.write(repoFile.getName().length());
-                                write.write(repoFile.getName().getBytes("UTF-8"));
+                                //Parse code
+                                
+                                if ((new String(code, "UTF-8")).equals("get")) {
+                                    write.write(2); //2 for ok
+                                    
+                                    log.log("GET repo.");
+                                    write.write(repoCommitNumber);
+
+                                    //Send uuid
+                                    log.log("Sending uuid");
+                                    write.write((repoUUID).getBytes("UTF-8"));
+
+                                    //Send repo name
+                                    write.write(repoFile.getName().length());
+                                    write.write(repoFile.getName().getBytes("UTF-8"));
+                                    
+                                    //Send repo data, find current.zip
+                                    File workingZip = new File(repoFile.getAbsolutePath() + "/master/working/current.zip");
+                                    if (workingZip.exists()) {
+                                        //Then send the data
+                                        log.log("Sending repo size: " + workingZip.length());
+                                        //Send size of repo
+                                        String len = Long.toString(workingZip.length());
+                                        byte[] fileLen = len.getBytes("UTF-8");
+                                        write.write(fileLen.length);
+                                        write.write(fileLen);
+                                        
+                                        //Then open the file
+                                        FileInputStream currentzip = new FileInputStream(workingZip);
+                                        byte[] buff = new byte[1000];
+                                        while (currentzip.read(buff) != -1) {
+                                            write.write(buff);
+                                        }
+                                    }
+                                    else {
+                                        write.write(0);
+                                    }
+                                }
+                                else {
+                                    write.write(1); //For not ok.
+                                    log.log("Failed to recieve command. Got " + new String(code, "UTF-8"));
+                                }
                             }
                             //Close everything
                             write.close();

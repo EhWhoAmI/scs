@@ -1,28 +1,10 @@
-/*
- * The MIT License
- *
- * Copyright 2017 Zyun.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
 package scs;
 
+import java.io.File;
+import java.io.FileFilter;
+import java.util.Arrays;
+import nu.xom.Element;
+import nu.xom.Text;
 import scstools.Command;
 
 /**
@@ -33,7 +15,55 @@ public class add implements Command{
 
     @Override
     public int execute(String[] args) {
+        //Check the arguments
+        if (args.length == 0) {
+            System.out.println("usage: scs add [<files>]");
+            return EXIT_SUCCESS;
+        }
+        else {
+            //Check whether this is a working copy
+            File currentDir = new File(System.getProperty("user.dir"));
+            if (!isSCSWorkingDir(currentDir)) {
+                System.out.println("The dir " + currentDir.getAbsolutePath() + " is not a scs working copy.");
+                return EXIT_SUCCESS;
+            }
+            //Get the path of the 
+            //Add the files
+            Element scsRoot = new Element("scs");
+            
+            if (args[0].equals(".")) {
+                //Get the other files in the userdir
+                File[] files = currentDir.listFiles();
+                for (File add:files) {
+                    if (!add.getName().equals(".scs")) {
+                        //Add to to add list.
+                        if (add.isFile()) {
+                            Element FileToAdd = new Element("file");
+                            Text text = new Text(add.getName());
+                            FileToAdd.appendChild(text);
+                        }
+                    }
+                }
+            }
+        }
         return EXIT_SUCCESS;
     }
     
+    private boolean isSCSWorkingDir(File f) {
+        if (Arrays.asList(f.list()).contains(".scs")) {
+            return true;
+        }
+        else if (f.getParentFile() != null) {
+            return isSCSWorkingDir(f.getParentFile());
+        }
+        else {
+            return false;
+        }
+    }
+    
+    public static void main(String[] args) {
+        Command thisCmd = new add();
+        String[] a = {"./example"};
+        thisCmd.execute(a);
+    }
 }
