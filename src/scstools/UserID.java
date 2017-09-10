@@ -5,8 +5,8 @@ import java.util.Scanner;
 /**
  * Gets the user id, and creates it if necessary
  * 
- * @author (your name) 
- * @version (a version number or a date)
+ * @author Zyun 
+ * @version 0.0.0
  */
 public class UserID {
     public static String userhash;

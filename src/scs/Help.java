@@ -17,6 +17,7 @@ public class Help implements Command {
                     + "\tcheckout       checkout a scs repo\n"
                     + "\tinfo           display the info of this program\n"
                     + "\thelp           display the help message\n"
+                    + "\tadd            add the files in the command arguments\n"
                     + "\n\'scs help <command>\' can let you find out more about the command.");
         } else {
             switch (args[0]) {
@@ -29,9 +30,12 @@ public class Help implements Command {
                     System.out.println("Displays the info of this program.");
                     break;
                 case "checkout":
-                    System.out.println("usage: scs checkout <url>");
+                    System.out.println("usage: scs checkout <url> [<checkout path>]");
                     System.out.println("Checkouts a new scs repo as specified repo.");
                     break;
+                case "add":
+                    System.out.println("usage: scs add [<files>]");
+                    System.out.println("Adds the following files in the arguments. If it is \'scs add .\', you add all the files in the working directory.");
             }
         }
         return Command.EXIT_SUCCESS;

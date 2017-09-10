@@ -3,9 +3,12 @@ package scs;
 import scstools.Command;
 import java.io.*;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Scanner;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import nu.xom.Attribute;
@@ -20,6 +23,8 @@ import nu.xom.ParsingException;
  */
 public class checkout implements Command
 {
+    //The charset we use for the communication
+    Charset utf8 = Charset.forName("UTF-8");
     @Override
     public int execute (String[] args) {
         if (args.length < 1 | args.length > 2) {
@@ -134,27 +139,66 @@ public class checkout implements Command
         else {
             //Open server socket
             try (Socket digit = new Socket(args[0], 19319);
-            BufferedReader in = new BufferedReader(
-                new InputStreamReader(digit.getInputStream()));
+                    BufferedInputStream in = new BufferedInputStream(digit.getInputStream());
             ) {
+                digit.setSoTimeout(20000);
+                OutputStream outputStream = digit.getOutputStream();
+                BufferedOutputStream out = new BufferedOutputStream(outputStream);
+                //Verification string
+                byte[] toW = "c6711b33d73157f21d70ef7d1341e016e92f8443cedd7de866".getBytes("UTF-8");
+                out.write(toW);
+                out.flush();
 
-            digit.setSoTimeout(20000);
-            PrintStream out = new PrintStream(
-                digit.getOutputStream());
-            //Verification string
-            out.print("c6711b33d73157f21d70ef7d1341e016e92f8443cedd7de866");
-            //Then give the command
-            out.print("GET");
-            //Read the repo commit
-            int repoCommit = in.read();
-            System.out.println("Repo commit: " + repoCommit);
-               
-            out.close();
-            in.close();
-            digit.close();
-        } catch (IOException e) {
-            System.out.println("IO Error:" + e.getMessage());
-        }
+                int repoCommit = in.read();
+
+                //Get uuid
+                byte[] uuid = new byte[36];
+                in.read(uuid);
+                //Get repo name
+                byte[] repoName = new byte[in.read()];
+                
+                in.read(repoName);
+                System.out.println(new String(repoName, utf8));
+                //Create .scs if it equals to 0
+                if (repoCommit == 0) {
+                    File scsFile;
+                    if (args.length == 2)
+                        scsFile = new File(args[1] + "/.scs");
+                    else
+                        scsFile = new File (new String(repoName, utf8) + "/.scs");
+                    
+                    scsFile.mkdirs();
+                    if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                        Path hiddenFile = scsFile.toPath();
+                        Files.setAttribute(hiddenFile, "dos:hidden", true);
+                    }
+                    //Then add the files 
+                    File UUIDFile = new File(scsFile.getAbsolutePath() + "/UUID");
+                    UUIDFile.createNewFile();
+                    
+                    PrintStream uuidFilePrintStream = new PrintStream(UUIDFile);
+                    System.out.println(new String(uuid, utf8));
+                    uuidFilePrintStream.print(new String(uuid, utf8));
+                    
+                    //Commit id
+                    File commitFile = new File(scsFile.getAbsolutePath() + "/commit");
+                    commitFile.createNewFile();
+                    PrintStream commitFilePrintStream = new PrintStream(commitFile);
+                    commitFilePrintStream.print(repoCommit);
+                    
+                    //HEAD
+                    File HEADFile = new File(scsFile.getAbsolutePath() + "/HEAD");
+                    HEADFile.createNewFile();
+                    PrintStream HEADFilePrintStream = new PrintStream(HEADFile);
+                    HEADFilePrintStream.print(args[0]);
+                }
+                outputStream.close();
+                in.close();
+                digit.close();
+            } catch (IOException e) {
+                System.out.println("IO Error:" + e.getMessage());
+                e.printStackTrace();
+            }
         }
         return Command.EXIT_SUCCESS;
     }

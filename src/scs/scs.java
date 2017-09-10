@@ -42,6 +42,8 @@ public class scs {
                     case "info":
                         cmd = new Info();
                     break;
+                    case "add":
+                        cmd = new add();
                 }
                 cmd.execute(commandArgs);
             }
