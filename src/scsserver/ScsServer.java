@@ -19,6 +19,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -42,6 +43,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import scstools.scsutils;
 
 //This is a bit of a mess, like always. Needs clearing up and documentation.
 //And serious refractoring
@@ -173,21 +175,7 @@ public class ScsServer extends JFrame {
         setVisible(true);
     }
 
-    /**
-     * Check if a folder is a scs repo
-     *
-     * @param fileCheck file to check
-     * @return whether of not it is a scs repo
-     */
-    private boolean isSCSRepo(File fileCheck) {
-        //Open the db folder and check if current and UUID exists. Also check version.
-        File dbFile = new File(fileCheck.getPath() + "/db");
-        File currentFile = new File(dbFile.getPath() + "/current");
-        File UUIDFile = new File(dbFile.getPath() + "/UUID");
-        File versionFile = new File(dbFile.getPath() + "/version");
-
-        return (dbFile.exists() & currentFile.exists() & UUIDFile.exists() & versionFile.exists());
-    }
+    
 
     /**
      * SCS Server get instancs
@@ -309,7 +297,7 @@ public class ScsServer extends JFrame {
         //Add server start code here
         Runnable server = () -> {
             //Server code here.
-            new ScsServerMainframe();
+            new ServerMainframe(repoUUID, repoCommitNumber, repoBaseFile);
         };
         Thread t = new Thread(server);
         t.start();
@@ -328,7 +316,7 @@ public class ScsServer extends JFrame {
             repoBaseFile = chooser.getSelectedFile();
             //Check whether it is a scs repo
             String[] fileList = repoBaseFile.list();
-            if (fileList.length == 0 | !isSCSRepo(repoBaseFile)) {
+            if (fileList.length == 0 | !scsutils.isSCSRepo(repoBaseFile)) {
                 //Is not an scs repo.
                 JOptionPane.showMessageDialog(mainPane, repoBaseFile.getAbsolutePath() + "is not an scs repo");
                 repoBaseFile = null;
@@ -408,7 +396,7 @@ public class ScsServer extends JFrame {
 
                     //For presetting. Makes things easier
                     repoBaseFile = new File(settingsProperties.getProperty("repopath"));
-                    if (!isSCSRepo(repoBaseFile)) {
+                    if (!scsutils.isSCSRepo(repoBaseFile)) {
                         //Exit
                         System.err.println("The folder " + repoBaseFile.getAbsolutePath() + " is not a scs repo");
                     } else {
@@ -508,133 +496,6 @@ public class ScsServer extends JFrame {
         }
     }
 
-    /**
-     * This is the mainframe of the scs server.
-     */
-    public class ScsServerMainframe {
-
-        Logging log = new Logging("/scsserver.log", true, true);
-
-        public ScsServerMainframe() {
-            try {
-                // Create a non-blocking server socket channel
-                ServerSocketChannel sock = ServerSocketChannel.open();
-                sock.configureBlocking(false);
-
-                // Set the host and port to monitor
-                InetSocketAddress server = new InetSocketAddress(
-                        "localhost", 19319);
-                ServerSocket socket = sock.socket();
-                socket.bind(server);
-
-                // Create the selector and register it on the channel
-                Selector selector = Selector.open();
-                sock.register(selector, SelectionKey.OP_ACCEPT);
-
-                // Loop forever, looking for client connections
-                while (true) {
-                    // Wait for a connection
-                    selector.select();
-
-                    // Get list of selection keys with pending events
-                    Set keys = selector.selectedKeys();
-                    Iterator it = keys.iterator();
-
-                    // Handle each key
-                    while (it.hasNext()) {
-
-                        // Get the key and remove it from the iteration
-                        SelectionKey sKey = (SelectionKey) it.next();
-
-                        it.remove();
-                        if (sKey.isAcceptable()) {
-
-                            // Create a socket connection with client
-                            ServerSocketChannel selChannel
-                                    = (ServerSocketChannel) sKey.channel();
-                            ServerSocket sSock = selChannel.socket();
-                            Socket connection = sSock.accept();
-
-                            OutputStream outputStream = connection.getOutputStream();
-                            BufferedOutputStream serverOutput = new BufferedOutputStream(outputStream);
-
-                            InputStream inputStream = connection.getInputStream();
-                            BufferedInputStream serverInput = new BufferedInputStream(inputStream);
-
-                            //Read the enter code. ("c6711b33d73157f21d70ef7d1341e016e92f8443cedd7de866")
-                            byte[] verifyCode = new byte[50];
-                            serverInput.read(verifyCode);
-
-                            if (verifyCode.equals("c6711b33d73157f21d70ef7d1341e016e92f8443cedd7de866".getBytes("UTF-8"))) {
-                                //Kill
-                                log.log("Denied access to someone, got " + verifyCode);
-
-                                //Close everything
-                                serverOutput.close();
-                                outputStream.close();
-                                connection.close();
-                                continue;
-                            } else {
-                                log.log("Accepted someone: Getting command");
-                                byte[] inputcommand = new byte[3];
-                                serverInput.read(inputcommand);
-                                
-                                //Parse code
-                                
-                                if ((new String(inputcommand, "UTF-8")).equals("get")) {
-                                    serverOutput.write(2); //2 for ok
-                                    
-                                    log.log("GET repo.");
-                                    serverOutput.write(repoCommitNumber);
-
-                                    //Send uuid
-                                    log.log("Sending uuid");
-                                    serverOutput.write((repoUUID).getBytes("UTF-8"));
-
-                                    //Send repo name
-                                    serverOutput.write(repoBaseFile.getName().length());
-                                    serverOutput.write(repoBaseFile.getName().getBytes("UTF-8"));
-                                    
-                                    //Send repo data, find current.zip
-                                    File workingZip = new File(repoBaseFile.getAbsolutePath() + "/master/working/current.zip");
-                                    if (workingZip.exists()) {
-                                        //Then send the data
-                                        log.log("Sending repo size: " + workingZip.length());
-                                        //Send size of repo
-                                        String len = Long.toString(workingZip.length());
-                                        byte[] fileLen = len.getBytes("UTF-8");
-                                        serverOutput.write(fileLen.length);
-                                        serverOutput.write(fileLen);
-                                        
-                                        //Then open the file
-                                        FileInputStream currentzip = new FileInputStream(workingZip);
-                                        byte[] buff = new byte[1000];
-                                        while (currentzip.read(buff) != -1) {
-                                            serverOutput.write(buff);
-                                        }
-                                    }
-                                    else {
-                                        serverOutput.write(0);
-                                    }
-                                }
-                                else {
-                                    serverOutput.write(1); //For not ok.
-                                    log.log("Failed to recieve command. Got " + new String(inputcommand, "UTF-8"));
-                                }
-                            }
-                            //Close everything
-                            serverOutput.close();
-                            outputStream.close();
-                            connection.close();
-                        }
-                    }
-                }
-            } catch (IOException ioe) {
-                System.out.println(ioe.getMessage());
-            }
-        }
-
-    }
 
     private synchronized void haltServer() {
         serverRunning = false;

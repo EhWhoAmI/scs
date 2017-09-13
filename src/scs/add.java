@@ -1,7 +1,6 @@
 package scs;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.util.Arrays;
 import nu.xom.Element;
 import nu.xom.Text;
@@ -41,9 +40,12 @@ public class add implements Command{
                             Element FileToAdd = new Element("file");
                             Text text = new Text(add.getName());
                             FileToAdd.appendChild(text);
+                            scsRoot.appendChild(FileToAdd);
                         }
                     }
                 }
+                System.out.println(scsRoot.toXML());
+                
             }
         }
         return EXIT_SUCCESS;
@@ -63,7 +65,7 @@ public class add implements Command{
     
     public static void main(String[] args) {
         Command thisCmd = new add();
-        String[] a = {"./example"};
+        String[] a = {"."};
         thisCmd.execute(a);
     }
 }

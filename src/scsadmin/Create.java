@@ -67,6 +67,7 @@ public class Create implements Command {
              * Create file structure.
              * Looks like this:
              * REPO ROOT
+             * |--> README.txt <== For the curious
              * |--> db <== Stands for database
              *   |--> current <== The current revision number
              *   |--> UUID <== The identification number of this repo
@@ -87,9 +88,21 @@ public class Create implements Command {
              *         |--> 0 <== Diff for push 0
              *         |--> ... (etc, etc...)
             */
-            //Create a readme.
             
-            //Create db folder
+            //Create a readme.
+            File readmeFile = new File (repoBaseName + "/README.txt");
+            readmeFile.createNewFile();
+            PrintStream readmeFileWriter = new PrintStream(readmeFile);
+            readmeFileWriter.println("Hello! You have come across a scs repo. If you have no idea what this is, carry on.\n");
+            readmeFileWriter.println("SCS is an open source source control system. For more infomation, consult <https://github.com/EhWhoAmI/scs>");
+            readmeFileWriter.println("for more infomation.\n\n");
+            
+            readmeFileWriter.println("If you do know what is this, please do not edit anything in the db and master files. It will corrupt");
+            readmeFileWriter.println("the repo. But, if you are just looking, carry on.\n\n");
+            
+            readmeFileWriter.println("If you know what you are doing, carry on, but at your own risk.");
+            
+            //Create eWriter.prindb folder
             DBFolderCreate(repoBaseName);
             //Create master folder
             masterFolderCreate(repoBaseName);
@@ -240,6 +253,11 @@ public class Create implements Command {
                 xmlFileWriter.close();
                 //Done. Do nothing for now
             }
+            
+            //Folder for all the files in the repo.
+            File fileList = new File (leafFile.getAbsolutePath() + "/FILES");
+            fileList.createNewFile();
+            //Add files by line.
         }
         
         //Working folder
@@ -273,6 +291,11 @@ public class Create implements Command {
             if (!pushes.mkdir()) {
                     throw new IOException("Unable to create push folder " + workingFolder.getAbsolutePath() + ". Check premissions.");
             }
+            
+            //Folder for all the files in the repo.
+            File fileList = new File (workingFolder.getAbsolutePath() + "/FILES");
+            fileList.createNewFile();
+            //Add files by line.
         }
     }
 }
