@@ -6,6 +6,7 @@
 package scstools;
 
 import java.io.File;
+import java.util.Arrays;
 
 /**
  *
@@ -26,5 +27,29 @@ public class scsutils {
         File versionFile = new File(dbFile.getPath() + "/version");
 
         return (dbFile.exists() & currentFile.exists() & UUIDFile.exists() & versionFile.exists());
+    }
+    
+    public static boolean isSCSWorkingDir(File f) {
+        if (Arrays.asList(f.list()).contains(".scs")) {
+            return true;
+        }
+        else if (f.getParentFile() != null) {
+            return isSCSWorkingDir(f.getParentFile());
+        }
+        else {
+            return false;
+        }
+    }
+    
+    public static File getSCSWorkingDirFile(File f) {
+        if (Arrays.asList(f.list()).contains(".scs")) {
+            return f;
+        }
+        else if (f.getParentFile() != null) {
+            return (getSCSWorkingDirFile(f.getParentFile()));
+        }
+        else {
+            return null;
+        }
     }
 }

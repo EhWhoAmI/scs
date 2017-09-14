@@ -1,14 +1,19 @@
 package scs;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import scstools.Command;
-import java.io.*;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Scanner;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import nu.xom.Attribute;
@@ -164,21 +169,27 @@ public class checkout implements Command {
 
                 //Get repo name
                 byte[] repoName = new byte[in.read()];
-
                 in.read(repoName);
 
-                System.out.println(new String(repoName, utf8));
+                //Read the files list
+                //Get length of string to tell the length,
+                int lengthOfFilesStr = in.read();
+                byte[] lengthOfFiles = new byte[lengthOfFilesStr];
+                in.read(lengthOfFiles);
+                String lengthOfF = new String(lengthOfFiles, "UTF-8");
+                byte[] fileList = new byte[Integer.parseInt(lengthOfF)];
+                in.read(fileList);
 
                 //Get the repo zip size
                 int zipSizeStr = in.read();
 
-                if (zipSizeStr != 0) {
-                    System.out.println("Got zip: " + zipSizeStr);
-                    byte[] zipLength = new byte[zipSizeStr];
-                    in.read(zipLength);
-                    //Then read from the zip
-                    String zipLen = new String(zipLength, utf8);
-                    System.out.println("Zip size: " + zipLen);
+                byte[] zipLength = new byte[zipSizeStr];
+                in.read(zipLength);
+                //Then read from the zip
+                String zipLen = new String(zipLength, utf8);
+
+                //Use double & so that java will not execute the next statement
+                if (zipSizeStr != 0 && Integer.parseInt(zipLen) != 0) {
                     byte[] zip = new byte[Integer.parseInt(zipLen)];
                     in.read(zip);
 
@@ -208,23 +219,33 @@ public class checkout implements Command {
                 PrintStream uuidFilePrintStream = new PrintStream(UUIDFile);
                 System.out.println(new String(uuid, utf8));
                 uuidFilePrintStream.print(new String(uuid, utf8));
+                uuidFilePrintStream.close();
 
                 //Commit id
                 File commitFile = new File(scsFile.getAbsolutePath() + "/commit");
                 commitFile.createNewFile();
                 PrintStream commitFilePrintStream = new PrintStream(commitFile);
                 commitFilePrintStream.print(repoCommit);
+                commitFilePrintStream.close();
 
                 //HEAD
                 File HEADFile = new File(scsFile.getAbsolutePath() + "/HEAD");
                 HEADFile.createNewFile();
                 PrintStream HEADFilePrintStream = new PrintStream(HEADFile);
                 HEADFilePrintStream.print(args[0]);
+                HEADFilePrintStream.close();
+
+                //FILES file
+                File FILESFile = new File(scsFile.getAbsolutePath() + "/FILES");
+                FILESFile.createNewFile();
+                FileOutputStream FILESFileInputStream = new FileOutputStream(FILESFile);
+                FILESFileInputStream.write(fileList);
+                FILESFileInputStream.close();
 
                 outputStream.close();
                 in.close();
                 digit.close();
-                
+                System.out.println("Checked out revision " + repoCommit);
             } catch (IOException e) {
                 System.out.println("IO Error:" + e.getMessage());
                 e.printStackTrace();

@@ -20,7 +20,8 @@ public class scs {
     public final static String[] commandList = {
             "help",
             "checkout",
-            "info"
+            "info",
+            "add"
     };
     static Command cmd;
     public static void main (String[] args) {

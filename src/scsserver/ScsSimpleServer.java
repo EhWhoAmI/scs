@@ -57,6 +57,7 @@ public class ScsSimpleServer {
             System.exit(0);
         }
         try {
+            System.out.println("Starting server...");
             new ScsSimpleServer(args[0]);
         } catch (FileNotFoundException ex) {
             System.err.println("The folder " + args + " is not an scs repo");

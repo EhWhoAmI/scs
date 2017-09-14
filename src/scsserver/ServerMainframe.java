@@ -29,6 +29,7 @@ public class ServerMainframe {
     Logging log = new Logging("/scsserver.log", true, true);
 
         public ServerMainframe(String repoUUID, int repoCommitNumber, File repoBaseFile) {
+            System.out.println("log: " + log.getLogfileName());
             try {
                 // Create a non-blocking server socket channel
                 ServerSocketChannel sock = ServerSocketChannel.open();
@@ -118,6 +119,13 @@ public class ServerMainframe {
                                        String filesSize = Long.toString(FILESFile.length());
                                        serverOutput.write(filesSize.length());
                                        serverOutput.write(filesSize.getBytes());
+                                       //Read the file.
+                                       FileInputStream FILESInputStream = new FileInputStream(FILESFile);
+                                       BufferedInputStream FilesBufferedInputStream = new BufferedInputStream(FILESInputStream);
+                                       int file;
+                                       while ((file = FilesBufferedInputStream.read()) != -1) {
+                                           serverOutput.write(file);
+                                       }
                                     }
                                     //Send repo data, find current.zip
                                     File workingZip = new File(repoBaseFile.getAbsolutePath() + "/master/working/current.zip");
