@@ -9,6 +9,8 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -20,6 +22,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  *
@@ -151,11 +154,34 @@ public class ServerMainframe {
                                 }
                                 //Push
                                 else if (new String(inputcommand, "UTF-8").equals("psh")){
-                                    //Get the amount of files to push
-                                    int fileInputLen = serverInput.read();
-                                    byte[] fileInputStr = new byte[fileInputLen];
-                                    serverInput.read(fileInputStr);
-                                    Integer.parseInt(new String(fileInputStr, "UTF-8"));
+                                    serverOutput.write(2); //2 for ok
+                                    
+                                    log.log("Push repo.");
+                                    //Get the type of push : 
+                                    /**
+                                     * 0, for files, as in filenames,
+                                     * 1, for the content of files.
+                                    */
+                                    int typeOfPush = serverInput.read();
+                                    if (typeOfPush == 0) {
+                                        //Read the number of files 
+                                        int sizeOfPushStr = serverInput.read();
+                                        byte[] sizeOfPush = new byte[sizeOfPushStr];
+                                        serverInput.read(sizeOfPush);
+                                        //Parse
+                                        byte[] pushSizeByteBuff = new byte[Integer.parseInt(new String(sizeOfPush, "UTF-8"))];
+                                        serverInput.read(pushSizeByteBuff);
+                                        
+                                        //Then write to a temp file
+                                        //Get amount of temps around.
+                                        File FILESTemp = new File(repoBaseFile.getAbsolutePath() + "/master/working/TEMP/" + String.valueOf(UUID.randomUUID()));
+                                        FILESTemp.createNewFile();
+                                        //Open the file and write to it.
+                                        FileOutputStream FILESTempWriter = new FileOutputStream(FILESTemp);
+                                        FILESTempWriter.write(pushSizeByteBuff);
+                                        FILESTempWriter.close();
+                                        //Done. Time to check diff.
+                                    }
                                 }
                                 else {
                                     serverOutput.write(1); //For not ok.

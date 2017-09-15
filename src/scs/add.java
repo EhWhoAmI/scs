@@ -1,8 +1,14 @@
 package scs;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Scanner;
@@ -19,10 +25,6 @@ public class add implements Command {
 
     @Override
     public int execute(String[] args) {
-        System.out.println("Args: " + args.length);
-        for (String a : args) {
-            System.out.println(a);
-        }
         //Check the arguments
         if (args.length == 0) {
             System.out.println("usage: scs add [<files>]");
@@ -47,7 +49,6 @@ public class add implements Command {
                 while (FILESScanner.hasNextLine()) {
                     added.add(FILESScanner.nextLine());
                 }
-                System.out.println(added.toString());
                 //Add the files
                 /**
                  * A file is marked, by the fact it does not have a / at the
@@ -55,29 +56,31 @@ public class add implements Command {
                  */
 
                 if (args[0].equals(".")) {
-                    //Get the other files in the userdir
-                    System.out.println("Getting all files...");
+                    //Get the other files in the user dir
                     File[] files = currentDir.listFiles();
 
                     for (File add : files) {
                         if (!add.getName().equals(".scs")) {
                             //Add to to add list.
-                            if (!(added.contains(add.getAbsolutePath().substring(scsWorkingDirString.length())))) {
+                            String addPath = add.getAbsolutePath().substring(scsWorkingDirString.length());
+                            addPath = addPath.concat((add.isDirectory()==true ? "/" : ""));
+
+                            int addedOrNot = (added.indexOf(addPath.replace('\\', '/')));
+
+                            if (addedOrNot == -1) {
                                 if (add.isFile()) {
                                     //Remove the string
-                                    
+
                                     //Remove the front bit, where the file does not exist
                                     String addingFileString = add.getAbsolutePath().substring(scsWorkingDirString.length());
-                                   
 
                                     //Replace all as foward slashes, for the general use.
                                     toAdd.add((addingFileString.replace('\\', '/')));
 
                                 } else if (add.isDirectory()) {
                                     //Add as dir
-                                  
+
                                     String addingFileString = add.getAbsolutePath().substring(scsWorkingDirString.length());
-                                   
 
                                     //Replace all as foward slashes, for the general use.
                                     toAdd.add((addingFileString.replace('\\', '/')) + "/");
@@ -85,26 +88,65 @@ public class add implements Command {
                             }
                         }
                     }
-                    System.out.println(toAdd.toString());
                     //Write to file
-                    PrintWriter FILESPrintWriter = new PrintWriter(FILESFile);
+                    FileWriter FILESWriter = new FileWriter(FILESFile, true);
+
+                    PrintWriter FILESPrintWriter = new PrintWriter(FILESWriter);
                     for (Iterator<String> it = toAdd.iterator(); it.hasNext();) {
                         String next = it.next();
                         FILESPrintWriter.println(next);
                     }
                     FILESPrintWriter.close();
+                    
+                    System.out.println("Adding files:");
+                    for (String list : toAdd) {
+                        System.out.println("A\t" + list);
+                    }
+                    //Then communicate with server to describe the changes.
+                    
+                    //Get HEAD
+                    Scanner HEADFILEScanner = new Scanner(new File(scsWorkingDirString + "/.scs/HEAD"));
+                    String HEAD = HEADFILEScanner.nextLine();
+                    Socket sock = new Socket(HEAD, 19319);
+                    BufferedInputStream inputStream = new BufferedInputStream(sock.getInputStream());
+                    sock.setSoTimeout(20000);
+                    BufferedOutputStream outputStream = new BufferedOutputStream(sock.getOutputStream());
+                    //Send verify
+                    outputStream.write("c6711b33d73157f21d70ef7d1341e016e92f8443cedd7de866".getBytes("UTF-8"));
+                    
+                    //Write command
+                    outputStream.write("psh".getBytes("UTF-8"));
+                    outputStream.flush();
+                    
+                    //Write the type of push: 0
+                    outputStream.write(0);
+                    
+                    //Then write the file
+                    long FILESFILElen = FILESFile.length();
+                    
+                    //To string.
+                    String FILESFILELEString = Long.toString(FILESFILElen);
+                    //Write the length of that string
+                    outputStream.write(FILESFILELEString.length());
+                    outputStream.write(FILESFILELEString.getBytes("UTF-8"));
+                    
+                    //Write the file
+                    FileInputStream FILESFileInputStream = new FileInputStream(FILESFile);
+                    
+                    //Write to server
+                    int write;
+                    while((write = FILESFileInputStream.read()) != -1) {
+                        outputStream.write(write);
+                    }
+                    outputStream.close();
                 }
+                
             } catch (FileNotFoundException ex) {
+                Logger.getLogger(add.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException ex) {
                 Logger.getLogger(add.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
         return EXIT_SUCCESS;
-    }
-
-    public static void main(String[] args) {
-        Command thisCmd = new add();
-        String[] a = {""};
-        System.out.println("Running...");
-        thisCmd.execute(a);
     }
 }
