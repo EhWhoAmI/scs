@@ -14,13 +14,16 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.UUID;
 
@@ -180,7 +183,39 @@ public class ServerMainframe {
                                         FileOutputStream FILESTempWriter = new FileOutputStream(FILESTemp);
                                         FILESTempWriter.write(pushSizeByteBuff);
                                         FILESTempWriter.close();
+                                        
                                         //Done. Time to check diff.
+                                        //Read all the elements from the temp file
+                                        Scanner TEMPScanner = new Scanner(FILESTemp);
+                                        ArrayList<String> toAdd = new ArrayList<>();
+                                        while (TEMPScanner.hasNextLine()) {
+                                            String next = TEMPScanner.nextLine();
+                                            toAdd.add(next);
+                                        }
+                                        
+                                        Scanner FILESScanner = new Scanner(new File(repoBaseFile.getAbsolutePath() + "/master/working/FILES"));
+                                        ArrayList<String> added = new ArrayList<>();
+                                        while (FILESScanner.hasNextLine()) {
+                                            String next = FILESScanner.nextLine();
+                                            added.add(next);
+                                        }
+                                        //Now the actual file
+                                        //Push xml doc.
+                                        if (added.size() == 0) {
+                                            //Just copy the whole file FILES
+                                            PrintWriter writer = new PrintWriter(repoBaseFile.getAbsolutePath() + "/master/working/FILES");
+                                            for (String s : toAdd) {
+                                                writer.println(s);
+                                                //Create files
+                                                File toCreate = new File(repoBaseFile.getAbsolutePath() + "/master/working/current" + s);
+                                                
+                                            }
+                                            writer.close();
+                                        }
+                                        else {
+                                            //Find the point where both files cease to be the same.
+                                            //The added file will always be bigger than 
+                                        }
                                     }
                                 }
                                 else {

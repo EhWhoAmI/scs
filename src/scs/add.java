@@ -98,6 +98,10 @@ public class add implements Command {
                     }
                     FILESPrintWriter.close();
                     
+                    if (toAdd.size() == 0){
+                        System.out.println("No files to add.");
+                        return Command.EXIT_SUCCESS;
+                    }
                     System.out.println("Adding files:");
                     for (String list : toAdd) {
                         System.out.println("A\t" + list);
