@@ -22,6 +22,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Scanner;
 import java.util.Set;
@@ -35,7 +36,6 @@ public class ServerMainframe {
     Logging log = new Logging("/scsserver.log", true, true);
 
         public ServerMainframe(String repoUUID, int repoCommitNumber, File repoBaseFile) {
-            System.out.println("log: " + log.getLogfileName());
             try {
                 // Create a non-blocking server socket channel
                 ServerSocketChannel sock = ServerSocketChannel.open();
@@ -208,14 +208,42 @@ public class ServerMainframe {
                                                 writer.println(s);
                                                 //Create files
                                                 File toCreate = new File(repoBaseFile.getAbsolutePath() + "/master/working/current" + s);
-                                                
+                                                if (s.endsWith("/")){
+                                                    toCreate.mkdir();
+                                                }
+                                                else {
+                                                    toCreate.getParentFile().mkdirs();
+                                                    toCreate.createNewFile();
+                                                }
                                             }
                                             writer.close();
                                         }
                                         else {
                                             //Find the point where both files cease to be the same.
-                                            //The added file will always be bigger than 
+                                            //The added file will always be bigger than the 
+                                            ArrayList<String> adding = new ArrayList<>(toAdd.subList(added.size(), toAdd.size()));
+                                            //Write to the file
+                                            
+                                            FileWriter FILESFileWriter = new FileWriter(repoBaseFile.getAbsolutePath() + "/master/working/FILES", true);
+                                            PrintWriter FILESPrintWriter = new PrintWriter(FILESFileWriter);
+                                            for (String s:adding) {
+                                                FILESPrintWriter.println(s);
+                                                //Also recreate file.
+                                                //Create files
+                                                File toCreate = new File(repoBaseFile.getAbsolutePath() + "/master/working/current" + s);
+                                                if (s.endsWith("/")){
+                                                    toCreate.mkdir();
+                                                }
+                                                else {
+                                                    toCreate.getParentFile().mkdirs();
+                                                    toCreate.createNewFile();
+                                                }
+                                            }
+                                            FILESPrintWriter.close();
+                                            FILESFileWriter.close();
                                         }
+                                        
+                                        //Create zip: todo
                                     }
                                 }
                                 else {
