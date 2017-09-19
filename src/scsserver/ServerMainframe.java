@@ -195,7 +195,13 @@ public class ServerMainframe {
                                         String next = TEMPScanner.nextLine();
                                         toAdd.add(next);
                                     }
-
+                                    
+                                    TEMPScanner.close();
+                                    //Delete temp files.
+                                    if (!FILESTemp.delete()) {
+                                        System.out.println("UNABLE TO DELETE FILE!");
+                                    }
+                                    
                                     Scanner FILESScanner = new Scanner(new File(repoBaseFile.getAbsolutePath() + "/master/working/FILES"));
                                     ArrayList<String> added = new ArrayList<>();
                                     while (FILESScanner.hasNextLine()) {
@@ -241,33 +247,31 @@ public class ServerMainframe {
                                         //The added file will always be bigger than the 
                                         ArrayList<String> adding = new ArrayList<>(toAdd.subList(added.size(), toAdd.size()));
                                         //Write to the file
-
-                                        FileWriter FILESFileWriter = new FileWriter(repoBaseFile.getAbsolutePath() + "/master/working/FILES", true);
-                                        PrintWriter FILESPrintWriter = new PrintWriter(FILESFileWriter);
-                                        for (String s : adding) {
-                                            FILESPrintWriter.println(s);
-                                            //Also recreate file.
-                                            //Create files
-                                            File toCreate = new File(repoBaseFile.getAbsolutePath() + "/master/working/current" + s);
-                                            Element e;
-                                            Element add = new Element("add");
-                                            if (s.endsWith("/")) {
-                                                toCreate.mkdir();
-                                                e = new Element("dir");
-                                            } else {
-                                                toCreate.getParentFile().mkdirs();
-                                                toCreate.createNewFile();
-                                                e = new Element("file");
+                                        try (FileWriter FILESFileWriter = new FileWriter(repoBaseFile.getAbsolutePath() + "/master/working/FILES", true)) {
+                                            PrintWriter FILESPrintWriter = new PrintWriter(FILESFileWriter);
+                                            for (String s : adding) {
+                                                FILESPrintWriter.println(s);
+                                                //Also recreate file.
+                                                //Create files
+                                                File toCreate = new File(repoBaseFile.getAbsolutePath() + "/master/working/current" + s);
+                                                Element e;
+                                                Element add = new Element("add");
+                                                if (s.endsWith("/")) {
+                                                    toCreate.mkdir();
+                                                    e = new Element("dir");
+                                                } else {
+                                                    toCreate.getParentFile().mkdirs();
+                                                    toCreate.createNewFile();
+                                                    e = new Element("file");
+                                                }
+                                                e.appendChild(add);
+                                                Attribute a = new Attribute("name", s);
+                                                e.addAttribute(a);
+                                                root.appendChild(e);
                                             }
-                                            e.appendChild(add);
-                                            Attribute a = new Attribute("name", s);
-                                            e.addAttribute(a);
-                                            root.appendChild(e);
+                                            FILESPrintWriter.close();
                                         }
-                                        FILESPrintWriter.close();
-                                        FILESFileWriter.close();
                                     }
-
                                     //Write to xml file
                                     Document doc = new Document(root);
 
