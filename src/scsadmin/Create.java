@@ -280,6 +280,10 @@ public class Create implements Command {
             
             //Write to diff file
             Element scs = new Element("scs");
+            Element version = new Element("version");
+            Attribute versionValue = new Attribute("value", scsadmin.version);
+            version.addAttribute(versionValue);
+            scs.appendChild(version);
             //That's all. Will parse when commiting
             Document scsDocument = new Document(scs);
             FileWriter xmlFileWriter = new FileWriter(diffFile);
