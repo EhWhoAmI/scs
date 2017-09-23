@@ -21,6 +21,9 @@ import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
@@ -30,6 +33,9 @@ import java.util.UUID;
 import nu.xom.Attribute;
 import nu.xom.Document;
 import nu.xom.Element;
+import org.kamranzafar.jtar.TarEntry;
+import org.kamranzafar.jtar.TarInputStream;
+import org.kamranzafar.jtar.TarOutputStream;
 
 /**
  *
@@ -137,25 +143,44 @@ public class ServerMainframe {
                                         serverOutput.write(file);
                                     }
                                 }
-                                //Send repo data, find current.zip
-                                File workingZip = new File(repoBaseFile.getAbsolutePath() + "/master/working/current.zip");
-                                if (workingZip.exists()) {
-                                    //Then send the data
-                                    log.log("Sending repo size: " + workingZip.length());
-                                    //Send size of repo
-                                    String len = Long.toString(workingZip.length());
-                                    byte[] fileLen = len.getBytes("UTF-8");
-                                    serverOutput.write(fileLen.length);
-                                    serverOutput.write(fileLen);
+                                //Send repo data
+                                {
+                                    //Get all files in dir.
+                                    Object[] fileList = Files.walk(Paths.get(repoBaseFile.getAbsolutePath() + "/master/working/current"))
+                                            .filter(Files::isRegularFile).toArray();
+                                    //Send the total amount of files
+                                    serverOutput.write(Integer.toString(fileList.length).length());
+                                    serverOutput.write(Integer.toString(fileList.length).getBytes("UTF-8"));
+                                    serverOutput.flush();
+                                    for (Object o : fileList) {
+                                        if (o instanceof Path) {
+                                            //Get the path of file
+                                            Path filepath = (Path) o;
+                                            File fileFile = filepath.toFile();
+                                            //Load file
+                                            //File size
+                                            serverOutput.write(Long.toString(fileFile.length()).length());
+                                            serverOutput.write(Long.toString(fileFile.length()).getBytes("UTF-8"));
 
-                                    //Then open the file
-                                    FileInputStream currentzip = new FileInputStream(workingZip);
-                                    byte[] buff = new byte[1000];
-                                    while (currentzip.read(buff) != -1) {
-                                        serverOutput.write(buff);
+                                            //File name
+                                            String fileName = fileFile.getAbsolutePath().substring(repoBaseFile.getAbsolutePath().length());
+
+                                            serverOutput.write(fileName.length());
+                                            serverOutput.write(fileName.getBytes("UTF-8"));
+                                            //File
+                                            FileInputStream fileFileInputStream = new FileInputStream(fileFile);
+                                            BufferedInputStream fileFileBufferedInputStream = new BufferedInputStream(fileFileInputStream);
+                                            if (fileFile.length() != 0) {
+                                                byte[] buffer = new byte[(int) fileFile.length()];
+                                                fileFileBufferedInputStream.read(buffer);
+
+                                                fileFileInputStream.close();
+                                                fileFileBufferedInputStream.close();
+                                                serverOutput.write(buffer);
+                                                serverOutput.flush();
+                                            }
+                                        }
                                     }
-                                } else {
-                                    serverOutput.write(0);
                                 }
                             } //Push
                             else if (new String(inputcommand, "UTF-8").equals("psh")) {
@@ -195,13 +220,13 @@ public class ServerMainframe {
                                         String next = TEMPScanner.nextLine();
                                         toAdd.add(next);
                                     }
-                                    
+
                                     TEMPScanner.close();
                                     //Delete temp files.
                                     if (!FILESTemp.delete()) {
                                         System.out.println("UNABLE TO DELETE FILE!");
                                     }
-                                    
+
                                     Scanner FILESScanner = new Scanner(new File(repoBaseFile.getAbsolutePath() + "/master/working/FILES"));
                                     ArrayList<String> added = new ArrayList<>();
                                     while (FILESScanner.hasNextLine()) {

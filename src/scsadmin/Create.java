@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import nu.xom.*;
+
 /**
  * Creates a repo in the argument.
  * 
@@ -74,7 +75,7 @@ public class Create implements Command {
              *   |--> version <== The current version of the 
              * |--> master <== `master` folder, where the code resides
              *   |--> leaf <== The place where the latest revision resides
-             *     |--> current.zip <== The zip archive of the current revision
+             *     |--> current.tar <== The zip archive of the current revision
              *     |--> diff <== The folder for the diff
              *       |--> 0 <== Diff for revision 0
              *       |--> ... (etc, etc...)
@@ -82,7 +83,7 @@ public class Create implements Command {
              *   |--> working <== The working branch
              *       |--> current <== Folder where all the code exists. Use this for comparing
              *         |-->xxx.txt <== The files in the repo
-             *       |--> current.zip <== The zip fole for the current code.
+             *       |--> current.tar <== The zip fole for the current code.
              *       |--> diff <== The total diff from the latest revision
              *       |--> pushes <== The diff for each individual push. Scrapped after each revision
              *         |--> 0 <== Diff for push 0
@@ -198,7 +199,7 @@ public class Create implements Command {
                 throw new IOException("Unable to create leaf folder " + leafFile.getAbsolutePath() + ". Check premissions.");
             }
             
-            //Create current.zip
+            //Create current.tar
             
             //Create diff folder
             {

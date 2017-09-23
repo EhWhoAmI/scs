@@ -21,6 +21,7 @@ import nu.xom.Builder;
 import nu.xom.Document;
 import nu.xom.Element;
 import nu.xom.ParsingException;
+import scstools.scsutils;
 
 /**
  * Checks out a scs repo.
@@ -52,7 +53,7 @@ public class checkout implements Command {
                     return Command.EXIT_SUCCESS;
                 }
                 //Check if it is a repo.
-                if (!isSCSRepo(checkoutrepoURL)) {
+                if (!scsutils.isSCSRepo(checkoutrepoURL)) {
                     System.err.println("The path " + checkoutrepoURL.getPath() + " is not a scs repo.");
                     return Command.EXIT_SUCCESS;
                 }
@@ -180,26 +181,46 @@ public class checkout implements Command {
                 byte[] fileList = new byte[Integer.parseInt(lengthOfF)];
                 in.read(fileList);
 
-                //Get the repo zip size
-                int zipSizeStr = in.read();
+                //Get files
+                int len = in.read();
+                byte[] file = new byte[len];
 
-                byte[] zipLength = new byte[zipSizeStr];
-                in.read(zipLength);
-                //Then read from the zip
-                String zipLen = new String(zipLength, utf8);
+                in.read(file);
+                int numOfFiles = Integer.parseInt(new String(file, "UTF-8"));
+                for (int i = 0; i < numOfFiles; i++) {
+                    //File size
+                    int fileSizeLen = in.read();
+                    System.out.println("File size len: " + fileSizeLen);
+                    int fileSize = 0;
+                    if (fileSizeLen != 0) {
+                        byte[] fileSizeStr = new byte[fileSizeLen];
+                        String fileSizeStrString = new String(fileSizeStr, "UTF-8");
+                        if (!fileSizeStrString.equals("")) {
+                            fileSize = Integer.parseInt(new String(fileSizeStr, "UTF-8"));
+                        }
+                        
+                    }
 
-                //Use double & so that java will not execute the next statement
-                if (zipSizeStr != 0 && Integer.parseInt(zipLen) != 0) {
-                    byte[] zip = new byte[Integer.parseInt(zipLen)];
-                    in.read(zip);
+                    //File name
+                    int fileNameLen = in.read();
+                    byte[] fileName = new byte[fileNameLen];
+                    in.read(fileName);
+                    String fileNameStr = new String(fileName, "UTF-8");
 
-                    File zipFile = new File(((args.length == 2) ? args[1] : new String(repoName, utf8)) + "/current.zip");
-                    zipFile.createNewFile();
+                    //File
+                    if (fileSize != 0) {
+                        byte[] fileData = new byte[fileSize];
+                        in.read(fileData);
+                        //Create file
+                        File toCreate = new File(args[1] + fileNameStr);
+                        FileOutputStream toCreateOutputStream = new FileOutputStream(toCreate);
+                        BufferedOutputStream toCreateBufferedOutputStream = new BufferedOutputStream(toCreateOutputStream);
 
-                    FileOutputStream zipFileOutputStream = new FileOutputStream(zipFile);
-                    zipFileOutputStream.write(zip);
+                        toCreateBufferedOutputStream.write(fileData);
+                        toCreateBufferedOutputStream.close();
+                        toCreateOutputStream.close();
+                    }
                 }
-
                 File scsFile;
                 if (args.length == 2) {
                     scsFile = new File(args[1] + "/.scs");
@@ -252,15 +273,5 @@ public class checkout implements Command {
             }
         }
         return Command.EXIT_SUCCESS;
-    }
-
-    private boolean isSCSRepo(File fileCheck) {
-        //Open the db folder and check if current and UUID exists. Also check version.
-        File dbFile = new File(fileCheck.getPath() + "/db");
-        File currentFile = new File(dbFile.getPath() + "/current");
-        File UUIDFile = new File(dbFile.getPath() + "/UUID");
-        File versionFile = new File(dbFile.getPath() + "/version");
-
-        return (dbFile.exists() & currentFile.exists() & UUIDFile.exists() & versionFile.exists());
     }
 }

@@ -6,7 +6,20 @@
 package scstools;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.EmptyFileFilter;
+import org.apache.commons.io.filefilter.IOFileFilter;
+import org.apache.commons.io.filefilter.RegexFileFilter;
 
 /**
  *
@@ -28,27 +41,23 @@ public class scsutils {
 
         return (dbFile.exists() & currentFile.exists() & UUIDFile.exists() & versionFile.exists());
     }
-    
+
     public static boolean isSCSWorkingDir(File f) {
         if (Arrays.asList(f.list()).contains(".scs")) {
             return true;
-        }
-        else if (f.getParentFile() != null) {
+        } else if (f.getParentFile() != null) {
             return isSCSWorkingDir(f.getParentFile());
-        }
-        else {
+        } else {
             return false;
         }
     }
-    
+
     public static File getSCSWorkingDirFile(File f) {
         if (Arrays.asList(f.list()).contains(".scs")) {
             return f;
-        }
-        else if (f.getParentFile() != null) {
+        } else if (f.getParentFile() != null) {
             return (getSCSWorkingDirFile(f.getParentFile()));
-        }
-        else {
+        } else {
             return null;
         }
     }
