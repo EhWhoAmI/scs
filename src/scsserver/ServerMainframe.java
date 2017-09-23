@@ -33,9 +33,6 @@ import java.util.UUID;
 import nu.xom.Attribute;
 import nu.xom.Document;
 import nu.xom.Element;
-import org.kamranzafar.jtar.TarEntry;
-import org.kamranzafar.jtar.TarInputStream;
-import org.kamranzafar.jtar.TarOutputStream;
 
 /**
  *
