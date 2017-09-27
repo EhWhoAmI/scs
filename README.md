@@ -18,6 +18,7 @@ because we need a good platform to host and to do source control.
 4. Why Java?
     - Short answer: Why not.
     - Long one: Because I am better in java and java sounds cool.
+    though we might change to C++ after this is up and running!
 
 ### How this works
 

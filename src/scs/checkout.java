@@ -171,56 +171,18 @@ public class checkout implements Command {
                 //Get repo name
                 byte[] repoName = new byte[in.read()];
                 in.read(repoName);
-
-                //Read the files list
-                //Get length of string to tell the length,
-                int lengthOfFilesStr = in.read();
-                byte[] lengthOfFiles = new byte[lengthOfFilesStr];
-                in.read(lengthOfFiles);
-                String lengthOfF = new String(lengthOfFiles, "UTF-8");
-                byte[] fileList = new byte[Integer.parseInt(lengthOfF)];
-                in.read(fileList);
-
-                //Get files
-                int len = in.read();
-                byte[] file = new byte[len];
-
-                in.read(file);
-                int numOfFiles = Integer.parseInt(new String(file, "UTF-8"));
-                for (int i = 0; i < numOfFiles; i++) {
-                    //File size
-                    int fileSizeLen = in.read();
-                    System.out.println("File size len: " + fileSizeLen);
-                    int fileSize = 0;
-                    if (fileSizeLen != 0) {
-                        byte[] fileSizeStr = new byte[fileSizeLen];
-                        String fileSizeStrString = new String(fileSizeStr, "UTF-8");
-                        if (!fileSizeStrString.equals("")) {
-                            fileSize = Integer.parseInt(new String(fileSizeStr, "UTF-8"));
-                        }
-                        
-                    }
-
-                    //File name
-                    int fileNameLen = in.read();
-                    byte[] fileName = new byte[fileNameLen];
-                    in.read(fileName);
-                    String fileNameStr = new String(fileName, "UTF-8");
-
-                    //File
-                    if (fileSize != 0) {
-                        byte[] fileData = new byte[fileSize];
-                        in.read(fileData);
-                        //Create file
-                        File toCreate = new File(args[1] + fileNameStr);
-                        FileOutputStream toCreateOutputStream = new FileOutputStream(toCreate);
-                        BufferedOutputStream toCreateBufferedOutputStream = new BufferedOutputStream(toCreateOutputStream);
-
-                        toCreateBufferedOutputStream.write(fileData);
-                        toCreateBufferedOutputStream.close();
-                        toCreateOutputStream.close();
-                    }
+                
+                ////
+                
+                //Files.
+                //Read number of files.
+                StringBuilder fileCount = new StringBuilder();
+                int read;
+                while ((read = in.read()) != '\0') {
+                    fileCount.append(read);
                 }
+                System.out.println("Files: " + read);
+                
                 File scsFile;
                 if (args.length == 2) {
                     scsFile = new File(args[1] + "/.scs");
@@ -257,11 +219,11 @@ public class checkout implements Command {
                 HEADFilePrintStream.close();
 
                 //FILES file
-                File FILESFile = new File(scsFile.getAbsolutePath() + "/FILES");
-                FILESFile.createNewFile();
-                FileOutputStream FILESFileInputStream = new FileOutputStream(FILESFile);
-                FILESFileInputStream.write(fileList);
-                FILESFileInputStream.close();
+//                File FILESFile = new File(scsFile.getAbsolutePath() + "/FILES");
+//                FILESFile.createNewFile();
+//                FileOutputStream FILESFileInputStream = new FileOutputStream(FILESFile);
+//                FILESFileInputStream.write(fileList);
+//                FILESFileInputStream.close();
 
                 outputStream.close();
                 in.close();

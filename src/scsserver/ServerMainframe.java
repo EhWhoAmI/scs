@@ -125,59 +125,48 @@ public class ServerMainframe {
                                 serverOutput.write(repoBaseFile.getName().length());
                                 serverOutput.write(repoBaseFile.getName().getBytes("UTF-8"));
 
-                                //Send number of files
-                                {
-                                    //First get size of files.
-                                    File FILESFile = new File(repoBaseFile.getAbsolutePath() + "/master/working/FILES");
-                                    String filesSize = Long.toString(FILESFile.length());
-                                    serverOutput.write(filesSize.length());
-                                    serverOutput.write(filesSize.getBytes());
-                                    //Read the file.
-                                    FileInputStream FILESInputStream = new FileInputStream(FILESFile);
-                                    BufferedInputStream FilesBufferedInputStream = new BufferedInputStream(FILESInputStream);
-                                    int file;
-                                    while ((file = FilesBufferedInputStream.read()) != -1) {
-                                        serverOutput.write(file);
-                                    }
-                                }
                                 //Send repo data
                                 {
                                     //Get all files in dir.
                                     Object[] fileList = Files.walk(Paths.get(repoBaseFile.getAbsolutePath() + "/master/working/current"))
-                                            .filter(Files::isRegularFile).toArray();
-                                    //Send the total amount of files
-                                    serverOutput.write(Integer.toString(fileList.length).length());
-                                    serverOutput.write(Integer.toString(fileList.length).getBytes("UTF-8"));
-                                    serverOutput.flush();
-                                    for (Object o : fileList) {
-                                        if (o instanceof Path) {
-                                            //Get the path of file
-                                            Path filepath = (Path) o;
-                                            File fileFile = filepath.toFile();
-                                            //Load file
-                                            //File size
-                                            serverOutput.write(Long.toString(fileFile.length()).length());
-                                            serverOutput.write(Long.toString(fileFile.length()).getBytes("UTF-8"));
+                                            .filter(Files::isReadable).toArray();
+                                    Files.walk(Paths.get(repoBaseFile.getAbsolutePath() + "/master/working/current"))
+                                            .filter(Files::isReadable).forEach(System.out::println);
 
-                                            //File name
-                                            String fileName = fileFile.getAbsolutePath().substring(repoBaseFile.getAbsolutePath().length());
+                                    //Send number of files
+                                    serverOutput.write((Integer.toString(fileList.length) + "\0").getBytes("UTF-8"));
 
-                                            serverOutput.write(fileName.length());
-                                            serverOutput.write(fileName.getBytes("UTF-8"));
-                                            //File
-                                            FileInputStream fileFileInputStream = new FileInputStream(fileFile);
-                                            BufferedInputStream fileFileBufferedInputStream = new BufferedInputStream(fileFileInputStream);
-                                            if (fileFile.length() != 0) {
-                                                byte[] buffer = new byte[(int) fileFile.length()];
-                                                fileFileBufferedInputStream.read(buffer);
+                                    File currentBase = new File(repoBaseFile.getAbsolutePath() + "/master/working/current");
+                                    //Files
+                                    for (int i = 0; i < fileList.length; i++) {
+                                        if (fileList[i] instanceof Path) {
+                                            Path p = (Path) fileList[i];
+                                            File f = p.toFile();
+                                            //Send ID
+                                            serverOutput.write(i);
+                                            //Send name
 
-                                                fileFileInputStream.close();
-                                                fileFileBufferedInputStream.close();
-                                                serverOutput.write(buffer);
-                                                serverOutput.flush();
+                                            String fileName = f.getAbsolutePath().substring(currentBase.toString().length());
+                                            log.log("Sending file" + fileName);
+
+                                            serverOutput.write((fileName + "\0").getBytes("UTF-8"));
+                                            //Send file data
+                                            //Type of file
+                                            if (f.isDirectory()) {
+                                                serverOutput.write(1);
+                                            } else {
+                                                serverOutput.write(2);
+                                                FileInputStream fileInputStream = new FileInputStream(f);
+
+                                                int read;
+                                                while ((read = fileInputStream.read()) != -1) {
+                                                    serverOutput.write(read);
+                                                }
+                                                serverOutput.write(-1);
                                             }
                                         }
                                     }
+
                                 }
                             } //Push
                             else if (new String(inputcommand, "UTF-8").equals("psh")) {
