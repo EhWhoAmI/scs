@@ -103,7 +103,8 @@ public class ServerMainframe {
                             outputStream.close();
                             connection.close();
                             continue;
-                        } else {
+                        } 
+                        else {
                             log.log("Accepted someone: Getting command");
                             byte[] inputcommand = new byte[3];
                             serverInput.read(inputcommand);
@@ -133,12 +134,13 @@ public class ServerMainframe {
                                     Files.walk(Paths.get(repoBaseFile.getAbsolutePath() + "/master/working/current"))
                                             .filter(Files::isReadable).forEach(System.out::println);
 
-                                    //Send number of files
-                                    serverOutput.write((Integer.toString(fileList.length) + "\0").getBytes("UTF-8"));
+                                    //Send number of files -1 because the first file is the base path.
+                                    serverOutput.write((Integer.toString(fileList.length - 1) + "\0").getBytes("UTF-8"));
 
                                     File currentBase = new File(repoBaseFile.getAbsolutePath() + "/master/working/current");
                                     //Files
-                                    for (int i = 0; i < fileList.length; i++) {
+                                    
+                                    for (int i = 1; i < fileList.length; i++) {
                                         if (fileList[i] instanceof Path) {
                                             Path p = (Path) fileList[i];
                                             File f = p.toFile();
@@ -157,12 +159,17 @@ public class ServerMainframe {
                                             } else {
                                                 serverOutput.write(2);
                                                 FileInputStream fileInputStream = new FileInputStream(f);
-
+                                                //Send size of file
+                                                String fileSize = Long.toString(f.length());
+                                                //Send the data
+                                                serverOutput.write((fileSize + "\0").getBytes("UTF-8"));
                                                 int read;
                                                 while ((read = fileInputStream.read()) != -1) {
                                                     serverOutput.write(read);
                                                 }
+                                                System.out.println("Done sending file " + f.getAbsolutePath());
                                                 serverOutput.write(-1);
+                                                serverOutput.flush();
                                             }
                                         }
                                     }

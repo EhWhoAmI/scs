@@ -13,6 +13,7 @@ import java.net.Socket;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -141,6 +142,7 @@ public class checkout implements Command {
                 Logger.getLogger(checkout.class.getName()).log(Level.SEVERE, null, ex);
             }
         } else {
+
             //Open server socket
             try (Socket digit = new Socket(args[0], 19319);
                     BufferedInputStream in = new BufferedInputStream(digit.getInputStream());) {
@@ -171,24 +173,79 @@ public class checkout implements Command {
                 //Get repo name
                 byte[] repoName = new byte[in.read()];
                 in.read(repoName);
+
+                //Deal with the repo 
+                File workingCopyBaseFile;
+                if (args.length == 2) {
+                    workingCopyBaseFile = new File(args[1]);
+                } else {
+                    workingCopyBaseFile = new File(new String(repoName, utf8));
+                }
                 
-                ////
-                
+                //Filelist
+                ArrayList<String> fileList = new ArrayList<>();
                 //Files.
                 //Read number of files.
                 StringBuilder fileCount = new StringBuilder();
                 int read;
                 while ((read = in.read()) != '\0') {
-                    fileCount.append(read);
+                    fileCount.append((char) read);
+                    System.out.println("Reading byte " + read);
                 }
-                System.out.println("Files: " + read);
-                
-                File scsFile;
-                if (args.length == 2) {
-                    scsFile = new File(args[1] + "/.scs");
-                } else {
-                    scsFile = new File(new String(repoName, utf8) + "/.scs");
+                System.out.println("Files: " + fileCount);
+
+                //Read the files
+                //To check for the files.
+                int count = 1;
+                for (; count < (Integer.parseInt(fileCount.toString()) + 1); count++) {
+                    int num;
+                    if ((num = in.read()) != count) {
+                        digit.close();
+                        System.out.println("Aborting due to server error. Count = " + count + ". Got: " + num);
+                        System.exit(1);
+                    }
+
+                    //Get filename
+                    int character;
+                    StringBuilder fileName = new StringBuilder();
+                    while ((character = in.read()) != '\0') {
+                        fileName.append((char) character);
+                    }
+                    System.out.println("Loading file " + fileName.toString());
+
+                    File toCreate = new File(workingCopyBaseFile.getAbsolutePath() + "/" + fileName.toString());
+                    //Get type of file:
+                    int fileType = in.read();
+                    if (fileType == 1) {
+                        //Is dir.
+                        toCreate.mkdirs();
+                        //Add to filelist.
+                        fileList.add(fileName + "/");
+                        System.out.println("File is dir");
+                        continue;
+                    } else {
+                        //Is file
+                        toCreate.createNewFile();
+                        //Add to filelist
+                        fileList.add(fileName.toString());
+                        //Read file data
+                        FileOutputStream toCreateFileOutputStream = new FileOutputStream(toCreate);
+
+                        //Size of content
+                        StringBuffer fileSize = new StringBuffer();
+                        while ((read = in.read()) != '\0') {
+                            fileSize.append((char) read);
+                        }
+
+                        for (int i = 0; i < Long.parseLong(fileSize.toString()); i++) {
+                            toCreateFileOutputStream.write(in.read());
+                        }
+                        toCreateFileOutputStream.close();
+                        System.out.println("read " + fileSize + " bytes");
+                    }
+
                 }
+                File scsFile = new File(workingCopyBaseFile.getAbsolutePath() + "/.scs");
 
                 scsFile.mkdirs();
                 if (System.getProperty("os.name").toLowerCase().contains("win")) {
@@ -219,12 +276,17 @@ public class checkout implements Command {
                 HEADFilePrintStream.close();
 
                 //FILES file
-//                File FILESFile = new File(scsFile.getAbsolutePath() + "/FILES");
-//                FILESFile.createNewFile();
-//                FileOutputStream FILESFileInputStream = new FileOutputStream(FILESFile);
-//                FILESFileInputStream.write(fileList);
-//                FILESFileInputStream.close();
-
+                
+                File FILESFile = new File(scsFile.getAbsolutePath() + "/FILES");
+                FILESFile.createNewFile();
+                FileOutputStream FILESFileInputStream = new FileOutputStream(FILESFile);
+                //Write the filelist
+                PrintStream FILESFilePrintStream = new PrintStream(FILESFileInputStream);
+                for (String toAdd: fileList) {
+                    FILESFilePrintStream.println(toAdd);
+                }
+                FILESFilePrintStream.close();
+                FILESFileInputStream.close();
                 outputStream.close();
                 in.close();
                 digit.close();
