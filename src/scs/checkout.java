@@ -181,7 +181,10 @@ public class checkout implements Command {
                 } else {
                     workingCopyBaseFile = new File(new String(repoName, utf8));
                 }
-                
+                //Check if exists
+                if (!workingCopyBaseFile.exists() || workingCopyBaseFile.isFile()) {
+                    workingCopyBaseFile.mkdirs();
+                }
                 //Filelist
                 ArrayList<String> fileList = new ArrayList<>();
                 //Files.
@@ -190,20 +193,19 @@ public class checkout implements Command {
                 int read;
                 while ((read = in.read()) != '\0') {
                     fileCount.append((char) read);
-                    System.out.println("Reading byte " + read);
                 }
-                System.out.println("Files: " + fileCount);
 
                 //Read the files
                 //To check for the files.
                 int count = 1;
                 for (; count < (Integer.parseInt(fileCount.toString()) + 1); count++) {
-                    int num;
-                    if ((num = in.read()) != count) {
-                        digit.close();
-                        System.out.println("Aborting due to server error. Count = " + count + ". Got: " + num);
-                        System.exit(1);
-                    }
+                    System.out.println("Reading file " + count);
+//                    int num;
+//                    if ((num = in.read()) != count) {
+//                        digit.close();
+//                        System.out.println("Aborting due to server error. Count = " + count + ". Got: " + num);
+//                        System.exit(1);
+//                    }
 
                     //Get filename
                     int character;
@@ -211,9 +213,8 @@ public class checkout implements Command {
                     while ((character = in.read()) != '\0') {
                         fileName.append((char) character);
                     }
-                    System.out.println("Loading file " + fileName.toString());
-
-                    File toCreate = new File(workingCopyBaseFile.getAbsolutePath() + "/" + fileName.toString());
+                   
+                    File toCreate = new File(workingCopyBaseFile.getCanonicalPath()+ "/" + fileName.toString());
                     //Get type of file:
                     int fileType = in.read();
                     if (fileType == 1) {
@@ -221,7 +222,6 @@ public class checkout implements Command {
                         toCreate.mkdirs();
                         //Add to filelist.
                         fileList.add(fileName + "/");
-                        System.out.println("File is dir");
                         continue;
                     } else {
                         //Is file
@@ -236,12 +236,12 @@ public class checkout implements Command {
                         while ((read = in.read()) != '\0') {
                             fileSize.append((char) read);
                         }
-
-                        for (int i = 0; i < Long.parseLong(fileSize.toString()); i++) {
-                            toCreateFileOutputStream.write(in.read());
+                        if(Long.parseLong(fileSize.toString()) > 0) {
+                            for(int i = 0; i < Long.parseLong(fileSize.toString()); i++) {
+                                toCreateFileOutputStream.write(in.read());
+                            }
                         }
                         toCreateFileOutputStream.close();
-                        System.out.println("read " + fileSize + " bytes");
                     }
 
                 }

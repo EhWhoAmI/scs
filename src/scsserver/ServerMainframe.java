@@ -131,8 +131,6 @@ public class ServerMainframe {
                                     //Get all files in dir.
                                     Object[] fileList = Files.walk(Paths.get(repoBaseFile.getAbsolutePath() + "/master/working/current"))
                                             .filter(Files::isReadable).toArray();
-                                    Files.walk(Paths.get(repoBaseFile.getAbsolutePath() + "/master/working/current"))
-                                            .filter(Files::isReadable).forEach(System.out::println);
 
                                     //Send number of files -1 because the first file is the base path.
                                     serverOutput.write((Integer.toString(fileList.length - 1) + "\0").getBytes("UTF-8"));
@@ -145,7 +143,8 @@ public class ServerMainframe {
                                             Path p = (Path) fileList[i];
                                             File f = p.toFile();
                                             //Send ID
-                                            serverOutput.write(i);
+                                            //serverOutput.write(i);
+                                            //log.log("Sending fileid " + i);
                                             //Send name
 
                                             String fileName = f.getAbsolutePath().substring(currentBase.toString().length());
@@ -168,7 +167,6 @@ public class ServerMainframe {
                                                     serverOutput.write(read);
                                                 }
                                                 System.out.println("Done sending file " + f.getAbsolutePath());
-                                                serverOutput.write(-1);
                                                 serverOutput.flush();
                                             }
                                         }
@@ -326,6 +324,7 @@ public class ServerMainframe {
                     }
                 }
             }
+        //Note: will have to change this for not stopping the server.
         } catch (IOException ioe) {
             System.out.println(ioe.getMessage());
             ioe.printStackTrace();
