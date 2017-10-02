@@ -200,12 +200,6 @@ public class checkout implements Command {
                 int count = 1;
                 for (; count < (Integer.parseInt(fileCount.toString()) + 1); count++) {
                     System.out.println("Reading file " + count);
-//                    int num;
-//                    if ((num = in.read()) != count) {
-//                        digit.close();
-//                        System.out.println("Aborting due to server error. Count = " + count + ". Got: " + num);
-//                        System.exit(1);
-//                    }
 
                     //Get filename
                     int character;

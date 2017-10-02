@@ -45,6 +45,7 @@ public class ServerMainframe {
 
     public ServerMainframe(String repoUUID, int repoCommitNumber, File repoBaseFile) {
         try {
+            //<editor-fold defaultstate="collapsed" desc="init server">
             // Create a non-blocking server socket channel
             ServerSocketChannel sock = ServerSocketChannel.open();
             sock.configureBlocking(false);
@@ -58,8 +59,9 @@ public class ServerMainframe {
             // Create the selector and register it on the channel
             Selector selector = Selector.open();
             sock.register(selector, SelectionKey.OP_ACCEPT);
-
-            // Loop forever, looking for client connections
+            // </editor-fold>
+            
+            //<editor-fold defaultstate="collapsed" desc="Server loop">
             while (true) {
                 // Wait for a connection
                 selector.select();
@@ -76,7 +78,7 @@ public class ServerMainframe {
 
                     it.remove();
                     if (sKey.isAcceptable()) {
-
+                        //<editor-fold defaultstate="collasped" desc="Handle server input">
                         // Create a socket connection with client
                         ServerSocketChannel selChannel
                                 = (ServerSocketChannel) sKey.channel();
@@ -89,7 +91,7 @@ public class ServerMainframe {
 
                         InputStream inputStream = connection.getInputStream();
                         BufferedInputStream serverInput = new BufferedInputStream(inputStream);
-
+                        // </editor-fold>
                         //Read the enter code. ("c6711b33d73157f21d70ef7d1341e016e92f8443cedd7de866")
                         byte[] verifyCode = new byte[50];
                         serverInput.read(verifyCode);
@@ -110,6 +112,7 @@ public class ServerMainframe {
                             serverInput.read(inputcommand);
 
                             //Parse code
+                            // <editor-fold defaultstate="collapsed" desc="Get repo">
                             if ((new String(inputcommand, "UTF-8")).equals("get")) {
                                 serverOutput.write(2); //2 for ok
 
@@ -148,6 +151,7 @@ public class ServerMainframe {
                                             //Send name
 
                                             String fileName = f.getAbsolutePath().substring(currentBase.toString().length());
+                                            fileName = fileName.replace('\\', '/');
                                             log.log("Sending file" + fileName);
 
                                             serverOutput.write((fileName + "\0").getBytes("UTF-8"));
@@ -173,7 +177,9 @@ public class ServerMainframe {
                                     }
 
                                 }
-                            } //Push
+                            }
+                            // </editor-fold>
+                            // <editor-fold defaultstate="collapsed" desc="push repo">
                             else if (new String(inputcommand, "UTF-8").equals("psh")) {
                                 serverOutput.write(2); //2 for ok
 
@@ -184,6 +190,7 @@ public class ServerMainframe {
                                  * content of files.
                                  */
                                 int typeOfPush = serverInput.read();
+                                //<editor-fold defaultstate="collapsed" desc="File push">
                                 if (typeOfPush == 0) {
                                     //Read the number of files 
                                     int sizeOfPushStr = serverInput.read();
@@ -204,6 +211,7 @@ public class ServerMainframe {
                                     FILESTempWriter.close();
 
                                     //Done. Time to check diff.
+                                    //<editor-fold defaultstate="collapsed" desc="Check file diff">
                                     //Read all the elements from the temp file
                                     Scanner TEMPScanner = new Scanner(FILESTemp);
                                     ArrayList<String> toAdd = new ArrayList<>();
@@ -259,9 +267,17 @@ public class ServerMainframe {
                                         }
                                         writer.close();
                                     } else {
-                                        //Find the point where both files cease to be the same.
-                                        //The added file will always be bigger than the 
-                                        ArrayList<String> adding = new ArrayList<>(toAdd.subList(added.size(), toAdd.size()));
+                                        
+                                        ArrayList<String> adding = new ArrayList<>();
+                                        //Calcuate diff
+                                        System.out.println("Sizes for each: " + toAdd.size() + " " + adding.size() + " " + added.size());
+                                        for (String i: toAdd) {
+                                            if (!added.contains(i)) {
+                                                //Add to adding
+                                                adding.add(i);
+                                                System.out.println("Adding file" + i);
+                                            }
+                                        }
                                         //Write to the file
                                         try (FileWriter FILESFileWriter = new FileWriter(repoBaseFile.getAbsolutePath() + "/master/working/FILES", true)) {
                                             PrintWriter FILESPrintWriter = new PrintWriter(FILESFileWriter);
@@ -311,8 +327,12 @@ public class ServerMainframe {
                                     PrintWriter pw4diff = new PrintWriter(diffFile);
                                     pw4diff.print(doc.toXML());
                                     pw4diff.close();
-                                }
-                            } else {
+                                    //</editor-fold>
+                                }  
+                                // </editor-fold>
+                            } 
+                            // </editor-fold>
+                            else {
                                 serverOutput.write(1); //For not ok.
                                 log.log("Failed to recieve command. Got " + new String(inputcommand, "UTF-8"));
                             }
@@ -324,6 +344,7 @@ public class ServerMainframe {
                     }
                 }
             }
+            //</editor-fold>
         //Note: will have to change this for not stopping the server.
         } catch (IOException ioe) {
             System.out.println(ioe.getMessage());
