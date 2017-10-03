@@ -21,7 +21,8 @@ public class scs {
             "help",
             "checkout",
             "info",
-            "add"
+            "add",
+            "push"
     };
     static Command cmd;
     public static void main (String[] args) {
@@ -45,6 +46,9 @@ public class scs {
                     break;
                     case "add":
                         cmd = new add();
+                        break;
+                    case "push":
+                        cmd = new push();
                 }
                 cmd.execute(commandArgs);
             }

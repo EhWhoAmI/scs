@@ -18,6 +18,7 @@ public class Help implements Command {
                     + "\tinfo           display the info of this program\n"
                     + "\thelp           display the help message\n"
                     + "\tadd            add the files in the command arguments\n"
+                    + "\tpush           push file to server or repo."
                     + "\n\'scs help <command>\' can let you find out more about the command.");
         } else {
             switch (args[0]) {
@@ -36,6 +37,10 @@ public class Help implements Command {
                 case "add":
                     System.out.println("usage: scs add [<files>]");
                     System.out.println("Adds the following files in the arguments. If it is \'scs add .\', you add all the files in the working directory.");
+                    break;
+                case "push":
+                    System.out.println("usage: scs push");
+                    System.out.println("Pushes the files to server or repo.");
             }
         }
         return Command.EXIT_SUCCESS;
