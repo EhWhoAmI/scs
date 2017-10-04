@@ -135,7 +135,7 @@ public class add implements Command {
                 }
                 FILESPrintWriter.close();
 
-                if (toAdd.size() == 0) {
+                if (toAdd.isEmpty()) {
                     System.out.println("No files to add.");
                     return Command.EXIT_SUCCESS;
                 }

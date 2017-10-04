@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package scsserver;
 
 import java.io.BufferedInputStream;
@@ -330,6 +325,25 @@ public class ServerMainframe {
                                     //</editor-fold>
                                 }  
                                 // </editor-fold>
+                                else if (typeOfPush == 1) {
+                                    Element root = new Element("root");
+                                    Element date = new Element("date");
+                                    Attribute dateAttri = new Attribute("value", new Date().toString());
+                                    date.addAttribute(dateAttri);
+                                    root.addAttribute(dateAttri);
+                                    //File push.
+                                    //Get number of deleted files.
+                                    int read;
+                                    StringBuilder deletedFileList = new StringBuilder();
+                                    while ((read = inputStream.read()) != '\0') {
+                                        deletedFileList.append((char) read);
+                                    }
+                                    //The number of deleted files!
+                                    int deletedFilesCount = Integer.parseInt(deletedFileList.toString());
+                                    if (deletedFilesCount != 0) {
+                                        //Read all the files
+                                    }
+                                }
                             } 
                             // </editor-fold>
                             else {
